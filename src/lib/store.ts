@@ -50,6 +50,11 @@ export function verifySubscriber(email: string): void {
   localStorage.setItem(SUBSCRIBERS_KEY, JSON.stringify(subs));
 }
 
+export function deleteSubscriber(id: string): void {
+  const subs = getSubscribers().filter(s => s.id !== id);
+  localStorage.setItem(SUBSCRIBERS_KEY, JSON.stringify(subs));
+}
+
 export function isAdminLoggedIn(): boolean {
   return sessionStorage.getItem(ADMIN_KEY) === 'true';
 }
