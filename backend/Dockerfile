@@ -2,11 +2,11 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy pom first for dependency caching
+# Cache dependencies separately from source
 COPY pom.xml .
 RUN mvn -B dependency:go-offline
 
-# Copy source and build
+# Build the JAR
 COPY src ./src
 RUN mvn -B package -DskipTests
 
@@ -16,7 +16,9 @@ WORKDIR /app
 
 COPY --from=build /app/target/tech-simplified-backend-0.0.1-SNAPSHOT.jar app.jar
 
-# Koyeb injects $PORT at runtime (default 8000); our app.properties already reads it
-EXPOSE 8000
+# Back4App injects PORT=80 at runtime (or 8080 depending on plan).
+# Our application.properties reads: server.port=${PORT:8081}
+# Spring Boot automatically listens on whatever port Back4App injects.
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
