@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, CheckCircle, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { addSubscriber, getSubscribers, verifySubscriber } from '@/lib/store';
+import { apiSubscribe, apiVerifySubscriberOtp } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
@@ -11,51 +11,47 @@ export function NewsletterSection() {
   const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (!email || !email.includes('@')) {
       toast({ title: 'Invalid email', description: 'Please enter a valid email.', variant: 'destructive' });
       return;
     }
-
-    const existing = getSubscribers().find(s => s.email === email && s.is_verified);
-    if (existing) {
-      toast({ title: 'Already subscribed', description: 'This email is already subscribed.' });
-      return;
-    }
-
     setLoading(true);
-    // Simulate OTP send
-    const code = String(Math.floor(1000 + Math.random() * 9000));
-    setGeneratedOtp(code);
-    setTimeout(() => {
+    try {
+      const result = await apiSubscribe(email);
+      if (result.status === 'already_verified') {
+        toast({ title: 'Already subscribed', description: 'This email is already subscribed.' });
+        setVerified(true);
+      } else {
+        setOtpSent(true);
+        toast({ title: 'OTP Sent!', description: 'Check your email for the 6-digit verification code.' });
+      }
+    } catch {
+      toast({ title: 'Failed to send OTP', description: 'Please try again.', variant: 'destructive' });
+    } finally {
       setLoading(false);
-      setOtpSent(true);
-      toast({ title: 'OTP Sent!', description: `Demo OTP: ${code} (In production, this would be emailed)` });
-    }, 1000);
+    }
   };
 
-  const handleVerify = () => {
-    if (otp === generatedOtp) {
-      const sub = {
-        id: crypto.randomUUID(),
-        email,
-        is_verified: true,
-        subscribed_at: new Date().toISOString(),
-      };
-      const existingUnverified = getSubscribers().find(s => s.email === email);
-      if (existingUnverified) {
-        verifySubscriber(email);
+  const handleVerify = async () => {
+    if (otp.length < 6) return;
+    setLoading(true);
+    try {
+      const result = await apiVerifySubscriberOtp(email, otp);
+      if (result.verified) {
+        setVerified(true);
+        toast({ title: 'Subscribed!', description: 'You will receive new post notifications by email.' });
       } else {
-        addSubscriber(sub);
+        toast({ title: 'Invalid OTP', description: 'The code you entered is incorrect.', variant: 'destructive' });
+        setOtp('');
       }
-      setVerified(true);
-      toast({ title: 'Subscribed!', description: 'You have been successfully subscribed.' });
-    } else {
-      toast({ title: 'Invalid OTP', description: 'The code you entered is incorrect.', variant: 'destructive' });
+    } catch {
+      toast({ title: 'Verification failed', description: 'Please try again.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,7 +66,7 @@ export function NewsletterSection() {
         >
           <Mail className="h-10 w-10 text-primary mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Stay Updated</h2>
-          <p className="text-muted-foreground mb-8">Subscribe to our newsletter for the latest posts.</p>
+          <p className="text-muted-foreground mb-8">Subscribe to get notified whenever a new post is published.</p>
 
           <AnimatePresence mode="wait">
             {verified ? (
@@ -82,6 +78,7 @@ export function NewsletterSection() {
               >
                 <CheckCircle className="h-12 w-12 text-primary" />
                 <p className="text-lg font-medium">Successfully subscribed!</p>
+                <p className="text-sm text-muted-foreground">You'll get an email for every new post.</p>
               </motion.div>
             ) : otpSent ? (
               <motion.div
@@ -90,18 +87,30 @@ export function NewsletterSection() {
                 animate={{ opacity: 1, x: 0 }}
                 className="flex flex-col items-center gap-4"
               >
-                <p className="text-sm text-muted-foreground">Enter the 4-digit code sent to your email</p>
-                <InputOTP maxLength={4} value={otp} onChange={setOtp}>
+                <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to <strong>{email}</strong></p>
+                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
                     <InputOTPSlot index={2} />
                     <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
                   </InputOTPGroup>
                 </InputOTP>
-                <Button onClick={handleVerify} className="bg-primary hover:bg-primary/90">
-                  Verify & Subscribe
+                <Button
+                  onClick={handleVerify}
+                  disabled={loading || otp.length < 6}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify & Subscribe'}
                 </Button>
+                <button
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => { setOtpSent(false); setOtp(''); }}
+                >
+                  Wrong email? Go back
+                </button>
               </motion.div>
             ) : (
               <motion.div
@@ -115,6 +124,7 @@ export function NewsletterSection() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSendOtp()}
                   className="bg-secondary border-border"
                 />
                 <Button onClick={handleSendOtp} disabled={loading} className="bg-primary hover:bg-primary/90 shrink-0">

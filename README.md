@@ -1,73 +1,99 @@
-# Welcome to your Lovable project
+# Tech Simplified
 
-## Project info
+A modern tech blog platform built with React, TypeScript, Vite, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Project Overview
 
-## How can I edit this code?
+**Tech Simplified** is a clean and performant blogging platform for sharing tech insights, tutorials, and stories. It features an admin dashboard for managing posts and a public-facing frontend for readers.
 
-There are several ways of editing your application.
+## 🛠️ Tech Stack
 
-**Use Lovable**
+- **React 18** — UI library
+- **TypeScript** — Type safety
+- **Vite** — Lightning-fast dev server & bundler
+- **Tailwind CSS** — Utility-first styling
+- **shadcn/ui** — Accessible component library
+- **Framer Motion** — Animations
+- **React Router** — Client-side routing
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 📦 Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- npm (comes with Node.js)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Step 1: Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Navigate to the project directory
+cd Tech_Simplified
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📝 Available Scripts
 
-**Use GitHub Codespaces**
+| Script | Description |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run tests |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📁 Project Structure
 
-## What technologies are used for this project?
+```
+src/
+├── components/      # Reusable UI components
+│   ├── ui/          # shadcn/ui base components
+│   ├── BlogCard.tsx
+│   ├── Navbar.tsx
+│   └── NewsletterSection.tsx
+├── pages/           # Route pages
+│   ├── Index.tsx
+│   ├── AdminDashboard.tsx
+│   ├── AdminLogin.tsx
+│   ├── BlogDetail.tsx
+│   └── NotFound.tsx
+├── lib/             # Utilities & data store
+└── hooks/           # Custom React hooks
+```
 
-This project is built with:
+## 🚢 Deployment
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+You can deploy this project to any static hosting provider:
 
-## How can I deploy this project?
+- **Vercel**: Connect your GitHub repo at [vercel.com](https://vercel.com)
+- **Netlify**: Drag & drop your `dist/` folder or connect via Git at [netlify.com](https://netlify.com)
+- **GitHub Pages**: Use the `gh-pages` package to deploy the `dist/` folder
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Build the production bundle first:
 
-## Can I connect a custom domain to my Lovable project?
+```sh
+npm run build
+```
 
-Yes, you can!
+## 🌐 Custom Domain
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Most hosting providers (Vercel, Netlify, etc.) support custom domain configuration from their dashboard settings.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## � Author
+
+**Tarnala Sribatsa Patro**
+
+🌐 Portfolio: [sribatsa.vercel.app](https://sribatsa.vercel.app/)
+
+## �📄 License
+
+This project is open source. Feel free to use and modify it for your own purposes.

@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { LogOut, Plus, Trash2, Pencil, Send, FileText, Users, MessageSquare, UserMinus } from 'lucide-react';
+import { Plus, Trash2, Pencil, Send, FileText, Users, MessageSquare, UserMinus, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,24 +8,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { isAdminLoggedIn, adminLogout, getBlogs, saveBlog, deleteBlog, getSubscribers, deleteSubscriber } from '@/lib/store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Blog, ContentBlock, Subscriber } from '@/lib/types';
+import { isAdminLoggedIn } from '@/lib/store';
+import {
+  apiGetBlogs, apiCreateBlog, apiUpdateBlog, apiDeleteBlog, ApiBlog,
+  apiGetSubscribers, apiDeleteSubscriber, apiSendNewsletter, ApiSubscriber,
+} from '@/lib/api';
+import { ContentBlock } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
+
+// ── Block Editor ──────────────────────────────────────────────────────────────
 
 function BlockEditor({ blocks, onChange }: { blocks: ContentBlock[]; onChange: (b: ContentBlock[]) => void }) {
   const addBlock = (type: ContentBlock['type']) => {
     onChange([...blocks, { id: crypto.randomUUID(), type, content: '' }]);
   };
-
   const updateBlock = (id: string, content: string) => {
     onChange(blocks.map(b => (b.id === id ? { ...b, content } : b)));
   };
-
   const removeBlock = (id: string) => {
     onChange(blocks.filter(b => b.id !== id));
   };
-
   const moveBlock = (idx: number, dir: -1 | 1) => {
     const next = [...blocks];
     const target = idx + dir;
@@ -49,15 +51,15 @@ function BlockEditor({ blocks, onChange }: { blocks: ContentBlock[]; onChange: (
               <Textarea
                 value={block.content}
                 onChange={e => updateBlock(block.id, e.target.value)}
-                placeholder="Write your text..."
-                className="bg-background border-border min-h-[80px]"
+                placeholder="Write your content..."
+                className="bg-secondary border-border min-h-[100px]"
               />
             ) : (
               <Input
                 value={block.content}
                 onChange={e => updateBlock(block.id, e.target.value)}
                 placeholder={block.type === 'image' ? 'Image URL...' : 'YouTube URL...'}
-                className="bg-background border-border"
+                className="bg-secondary border-border"
               />
             )}
           </div>
@@ -75,35 +77,70 @@ function BlockEditor({ blocks, onChange }: { blocks: ContentBlock[]; onChange: (
   );
 }
 
+// ── Main Dashboard ────────────────────────────────────────────────────────────
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [blogs, setBlogs] = useState<Blog[]>([]);
-  const [subscribers, setSubs] = useState<Subscriber[]>([]);
+
+  // Data state
+  const [blogs, setBlogs] = useState<ApiBlog[]>([]);
+  const [subscribers, setSubs] = useState<ApiSubscriber[]>([]);
+  const [loadingBlogs, setLoadingBlogs] = useState(true);
+  const [loadingSubs, setLoadingSubs] = useState(true);
 
   // Editor state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
+  const [saving, setSaving] = useState(false);
 
   // Message state
   const [sendTo, setSendTo] = useState<string>('all');
   const [selectedEmail, setSelectedEmail] = useState('');
+  const [msgSubject, setMsgSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
 
+  // ── Auth guard ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isAdminLoggedIn()) {
       navigate('/admin');
-      return;
     }
-    refresh();
   }, [navigate]);
 
-  const refresh = () => {
-    setBlogs(getBlogs().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
-    setSubs(getSubscribers().filter(s => s.is_verified));
-  };
+  // ── Fetch data ──────────────────────────────────────────────────────────────
+  const fetchBlogs = useCallback(async () => {
+    setLoadingBlogs(true);
+    try {
+      const data = await apiGetBlogs();
+      setBlogs(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    } catch {
+      toast({ title: 'Failed to load blogs', variant: 'destructive' });
+    } finally {
+      setLoadingBlogs(false);
+    }
+  }, []);
 
-  const handleSaveBlog = () => {
+  const fetchSubs = useCallback(async () => {
+    setLoadingSubs(true);
+    try {
+      const data = await apiGetSubscribers();
+      // Show only verified subscribers
+      setSubs(data.filter(s => s.verified));
+    } catch {
+      toast({ title: 'Failed to load subscribers', variant: 'destructive' });
+    } finally {
+      setLoadingSubs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBlogs();
+    fetchSubs();
+  }, [fetchBlogs, fetchSubs]);
+
+  // ── Blog handlers ───────────────────────────────────────────────────────────
+  const handleSaveBlog = async () => {
     if (!title.trim()) {
       toast({ title: 'Title required', variant: 'destructive' });
       return;
@@ -112,30 +149,43 @@ export default function AdminDashboard() {
       toast({ title: 'Add at least one content block', variant: 'destructive' });
       return;
     }
-    const now = new Date().toISOString();
-    const blog: Blog = {
-      id: editingId || crypto.randomUUID(),
-      title: title.trim(),
-      content: blocks,
-      created_at: editingId ? (getBlogs().find(b => b.id === editingId)?.created_at || now) : now,
-      updated_at: now,
-    };
-    saveBlog(blog);
-    resetEditor();
-    refresh();
-    toast({ title: editingId ? 'Blog updated!' : 'Blog created!' });
+    setSaving(true);
+    try {
+      const contentJson = JSON.stringify(blocks);
+      if (editingId) {
+        await apiUpdateBlog(editingId, title.trim(), contentJson);
+        toast({ title: 'Blog updated!' });
+      } else {
+        await apiCreateBlog(title.trim(), contentJson);
+        toast({ title: 'Blog published! Subscribers notified.' });
+      }
+      resetEditor();
+      fetchBlogs();
+    } catch (e: unknown) {
+      toast({ title: 'Failed to save blog', description: String(e), variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleEdit = (blog: Blog) => {
+  const handleEdit = (blog: ApiBlog) => {
     setEditingId(blog.id);
     setTitle(blog.title);
-    setBlocks([...blog.content]);
+    try {
+      setBlocks(JSON.parse(blog.content));
+    } catch {
+      setBlocks([{ id: crypto.randomUUID(), type: 'text', content: blog.content }]);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    deleteBlog(id);
-    refresh();
-    toast({ title: 'Blog deleted' });
+  const handleDelete = async (id: string) => {
+    try {
+      await apiDeleteBlog(id);
+      setBlogs(prev => prev.filter(b => b.id !== id));
+      toast({ title: 'Blog deleted' });
+    } catch {
+      toast({ title: 'Failed to delete blog', variant: 'destructive' });
+    }
   };
 
   const resetEditor = () => {
@@ -144,7 +194,12 @@ export default function AdminDashboard() {
     setBlocks([]);
   };
 
-  const handleSendMessage = () => {
+  // ── Message handler ─────────────────────────────────────────────────────────
+  const handleSendMessage = async () => {
+    if (!msgSubject.trim()) {
+      toast({ title: 'Subject is required', variant: 'destructive' });
+      return;
+    }
     if (!message.trim()) {
       toast({ title: 'Message is empty', variant: 'destructive' });
       return;
@@ -153,38 +208,38 @@ export default function AdminDashboard() {
       toast({ title: 'Select a subscriber', variant: 'destructive' });
       return;
     }
-    const target = sendTo === 'all' ? 'all subscribers' : selectedEmail;
-    toast({ title: 'Message sent!', description: `Sent to ${target} (demo — enable Cloud for real emails)` });
-    setMessage('');
+    setSending(true);
+    try {
+      await apiSendNewsletter(msgSubject.trim(), message.trim());
+      toast({ title: 'Message sent!', description: `Delivered to ${sendTo === 'all' ? 'all subscribers' : selectedEmail}` });
+      setMessage('');
+      setMsgSubject('');
+    } catch {
+      toast({ title: 'Failed to send message', variant: 'destructive' });
+    } finally {
+      setSending(false);
+    }
   };
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="flex items-center justify-between mb-8">
-        <motion.h1
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-2xl font-bold"
-        >
-          Admin Dashboard
-        </motion.h1>
-        <Button
-          variant="ghost"
-          className="text-muted-foreground"
-          onClick={() => { adminLogout(); navigate('/admin'); }}
-        >
-          <LogOut className="mr-2 h-4 w-4" /> Logout
-        </Button>
-      </div>
-
       <Tabs defaultValue="blogs">
         <TabsList className="bg-secondary mb-6">
-          <TabsTrigger value="blogs" className="gap-1"><FileText className="h-4 w-4" /> Blogs</TabsTrigger>
-          <TabsTrigger value="subscribers" className="gap-1"><Users className="h-4 w-4" /> Subscribers</TabsTrigger>
-          <TabsTrigger value="messages" className="gap-1"><MessageSquare className="h-4 w-4" /> Messages</TabsTrigger>
+          <TabsTrigger value="blogs" className="gap-1">
+            <FileText className="h-4 w-4" /> Blogs
+            {blogs.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{blogs.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="subscribers" className="gap-1">
+            <Users className="h-4 w-4" /> Subscribers
+            {subscribers.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{subscribers.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="gap-1">
+            <MessageSquare className="h-4 w-4" /> Messages
+          </TabsTrigger>
         </TabsList>
 
-        {/* BLOGS TAB */}
+        {/* ── BLOGS TAB ── */}
         <TabsContent value="blogs">
           <Card className="bg-card border-border/50 mb-6">
             <CardHeader>
@@ -202,8 +257,8 @@ export default function AdminDashboard() {
               />
               <BlockEditor blocks={blocks} onChange={setBlocks} />
               <div className="flex gap-2">
-                <Button onClick={handleSaveBlog} className="bg-primary hover:bg-primary/90">
-                  {editingId ? 'Update Blog' : 'Publish Blog'}
+                <Button onClick={handleSaveBlog} disabled={saving} className="bg-primary hover:bg-primary/90">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? 'Update Blog' : 'Publish Blog'}
                 </Button>
                 {editingId && (
                   <Button variant="ghost" onClick={resetEditor}>Cancel</Button>
@@ -217,8 +272,12 @@ export default function AdminDashboard() {
               <CardTitle className="text-lg">Blog History</CardTitle>
             </CardHeader>
             <CardContent>
-              {blogs.length === 0 ? (
-                <p className="text-muted-foreground text-sm text-center py-6">No blogs yet.</p>
+              {loadingBlogs ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : blogs.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-6">No blogs yet — create your first one above!</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -231,7 +290,7 @@ export default function AdminDashboard() {
                   </TableHeader>
                   <TableBody>
                     {blogs.map(blog => {
-                      const d = new Date(blog.created_at);
+                      const d = new Date(blog.createdAt);
                       return (
                         <TableRow key={blog.id}>
                           <TableCell className="font-medium">{blog.title}</TableCell>
@@ -241,9 +300,30 @@ export default function AdminDashboard() {
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(blog)}>
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(blog.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-card border-border">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Blog</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete <span className="font-medium text-foreground">"{blog.title}"</span>? This cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="border-border">Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => handleDelete(blog.id)}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </TableCell>
                         </TableRow>
                       );
@@ -255,28 +335,32 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        {/* SUBSCRIBERS TAB */}
+        {/* ── SUBSCRIBERS TAB ── */}
         <TabsContent value="subscribers">
           <Card className="bg-card border-border/50">
             <CardHeader>
               <CardTitle className="text-lg">Verified Subscribers</CardTitle>
             </CardHeader>
             <CardContent>
-              {subscribers.length === 0 ? (
-                <p className="text-muted-foreground text-sm text-center py-6">No subscribers yet.</p>
+              {loadingSubs ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : subscribers.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-6">No verified subscribers yet.</p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Email</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>Subscribed On</TableHead>
                       <TableHead>Time</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {subscribers.map(sub => {
-                      const d = new Date(sub.subscribed_at);
+                      const d = new Date(sub.subscribedAt);
                       return (
                         <TableRow key={sub.id}>
                           <TableCell className="font-medium">{sub.email}</TableCell>
@@ -293,17 +377,21 @@ export default function AdminDashboard() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Remove Subscriber</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to remove <span className="font-medium text-foreground">{sub.email}</span>? This action cannot be undone.
+                                    Are you sure you want to remove <span className="font-medium text-foreground">{sub.email}</span>? This cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel className="border-border">Cancel</AlertDialogCancel>
                                   <AlertDialogAction
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => {
-                                      deleteSubscriber(sub.id);
-                                      refresh();
-                                      toast({ title: 'Subscriber removed', description: sub.email });
+                                    onClick={async () => {
+                                      try {
+                                        await apiDeleteSubscriber(sub.id);
+                                        setSubs(prev => prev.filter(s => s.id !== sub.id));
+                                        toast({ title: 'Subscriber removed', description: sub.email });
+                                      } catch {
+                                        toast({ title: 'Failed to remove subscriber', variant: 'destructive' });
+                                      }
                                     }}
                                   >
                                     Remove
@@ -322,11 +410,11 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
-        {/* MESSAGES TAB */}
+        {/* ── MESSAGES TAB ── */}
         <TabsContent value="messages">
           <Card className="bg-card border-border/50">
             <CardHeader>
-              <CardTitle className="text-lg">Send Message</CardTitle>
+              <CardTitle className="text-lg">Send Message to Subscribers</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Select value={sendTo} onValueChange={setSendTo}>
@@ -334,7 +422,7 @@ export default function AdminDashboard() {
                   <SelectValue placeholder="Send to..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Subscribers</SelectItem>
+                  <SelectItem value="all">All Subscribers ({subscribers.length})</SelectItem>
                   <SelectItem value="one">One Subscriber</SelectItem>
                 </SelectContent>
               </Select>
@@ -345,12 +433,23 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Select subscriber..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {subscribers.map(s => (
-                      <SelectItem key={s.id} value={s.email}>{s.email}</SelectItem>
-                    ))}
+                    {subscribers.length === 0 ? (
+                      <SelectItem value="none" disabled>No subscribers yet</SelectItem>
+                    ) : (
+                      subscribers.map(s => (
+                        <SelectItem key={s.id} value={s.email}>{s.email}</SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               )}
+
+              <Input
+                placeholder="Email subject..."
+                value={msgSubject}
+                onChange={e => setMsgSubject(e.target.value)}
+                className="bg-secondary border-border"
+              />
 
               <Textarea
                 placeholder="Write your message..."
@@ -359,8 +458,9 @@ export default function AdminDashboard() {
                 className="bg-secondary border-border min-h-[120px]"
               />
 
-              <Button onClick={handleSendMessage} className="bg-primary hover:bg-primary/90">
-                <Send className="mr-2 h-4 w-4" /> Send Message
+              <Button onClick={handleSendMessage} disabled={sending} className="bg-primary hover:bg-primary/90">
+                {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                Send Message
               </Button>
             </CardContent>
           </Card>

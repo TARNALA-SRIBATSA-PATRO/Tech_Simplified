@@ -1,0 +1,20 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Files git should ignore in the backend
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Environment secrets — NEVER commit these
+.env
+run.bat
+
+
+# Maven build output
+target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

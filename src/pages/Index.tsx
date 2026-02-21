@@ -1,12 +1,22 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getBlogs } from '@/lib/store';
+import { Loader2 } from 'lucide-react';
+import { apiGetBlogs, ApiBlog } from '@/lib/api';
 import { BlogCard } from '@/components/BlogCard';
 import { NewsletterSection } from '@/components/NewsletterSection';
 
 const Index = () => {
-  const blogs = getBlogs().sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  const [blogs, setBlogs] = useState<ApiBlog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiGetBlogs()
+      .then(data =>
+        setBlogs([...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+      )
+      .catch(() => setBlogs([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -31,7 +41,11 @@ const Index = () => {
 
       {/* Blog Grid */}
       <section className="container mx-auto px-4 pb-16">
-        {blogs.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : blogs.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
             <p className="text-lg">No blog posts yet.</p>
             <p className="text-sm mt-1">Head to the admin dashboard to create your first post!</p>

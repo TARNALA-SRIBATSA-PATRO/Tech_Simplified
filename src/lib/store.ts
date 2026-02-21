@@ -56,17 +56,10 @@ export function deleteSubscriber(id: string): void {
 }
 
 export function isAdminLoggedIn(): boolean {
-  return sessionStorage.getItem(ADMIN_KEY) === 'true';
-}
-
-export function adminLogin(password: string): boolean {
-  if (password === ADMIN_PASSWORD) {
-    sessionStorage.setItem(ADMIN_KEY, 'true');
-    return true;
-  }
-  return false;
+  // Check for the JWT token set by the new OTP-based login
+  return !!sessionStorage.getItem('admin_jwt');
 }
 
 export function adminLogout(): void {
-  sessionStorage.removeItem(ADMIN_KEY);
+  sessionStorage.removeItem('admin_jwt');
 }

@@ -1,20 +1,26 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, Clock } from 'lucide-react';
-import { Blog } from '@/lib/types';
+import { ApiBlog } from '@/lib/api';
+import { ContentBlock } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-function getPreview(blog: Blog): string {
-  const textBlock = blog.content.find(b => b.type === 'text');
-  if (!textBlock) return 'No preview available.';
-  return textBlock.content.length > 120
-    ? textBlock.content.slice(0, 120) + '...'
-    : textBlock.content;
+function getPreview(contentJson: string): string {
+  try {
+    const blocks: ContentBlock[] = JSON.parse(contentJson);
+    const textBlock = blocks.find(b => b.type === 'text');
+    if (!textBlock) return 'No preview available.';
+    return textBlock.content.length > 120
+      ? textBlock.content.slice(0, 120) + '...'
+      : textBlock.content;
+  } catch {
+    return contentJson.slice(0, 120) + '...';
+  }
 }
 
-export function BlogCard({ blog, index }: { blog: Blog; index: number }) {
-  const date = new Date(blog.created_at);
+export function BlogCard({ blog, index }: { blog: ApiBlog; index: number }) {
+  const date = new Date(blog.createdAt);
 
   return (
     <motion.div
@@ -39,7 +45,7 @@ export function BlogCard({ blog, index }: { blog: Blog; index: number }) {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground leading-relaxed">{getPreview(blog)}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{getPreview(blog.content)}</p>
         </CardContent>
         <CardFooter>
           <Button asChild variant="ghost" className="text-primary hover:text-primary hover:bg-primary/10">
