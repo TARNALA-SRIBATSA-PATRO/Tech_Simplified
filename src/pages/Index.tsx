@@ -17,7 +17,7 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4"
         >
-          Welcome to <span className="text-gradient">BlogFire</span>
+          Welcome to <span className="text-gradient">Tech Simplified</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
