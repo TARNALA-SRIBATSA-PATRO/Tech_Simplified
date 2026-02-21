@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, Plus, Trash2, Pencil, Send, FileText, Users, MessageSquare } from 'lucide-react';
+import { LogOut, Plus, Trash2, Pencil, Send, FileText, Users, MessageSquare, UserMinus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { isAdminLoggedIn, adminLogout, getBlogs, saveBlog, deleteBlog, getSubscribers } from '@/lib/store';
+import { isAdminLoggedIn, adminLogout, getBlogs, saveBlog, deleteBlog, getSubscribers, deleteSubscriber } from '@/lib/store';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Blog, ContentBlock, Subscriber } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 
@@ -270,6 +271,7 @@ export default function AdminDashboard() {
                       <TableHead>Email</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Time</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -280,6 +282,36 @@ export default function AdminDashboard() {
                           <TableCell className="font-medium">{sub.email}</TableCell>
                           <TableCell className="text-muted-foreground">{d.toLocaleDateString()}</TableCell>
                           <TableCell className="text-muted-foreground">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive">
+                                  <UserMinus className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-card border-border">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove Subscriber</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to remove <span className="font-medium text-foreground">{sub.email}</span>? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="border-border">Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => {
+                                      deleteSubscriber(sub.id);
+                                      refresh();
+                                      toast({ title: 'Subscriber removed', description: sub.email });
+                                    }}
+                                  >
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
