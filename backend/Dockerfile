@@ -16,9 +16,9 @@ WORKDIR /app
 
 COPY --from=build /app/target/tech-simplified-backend-0.0.1-SNAPSHOT.jar app.jar
 
-# Back4App injects PORT=80 at runtime (or 8080 depending on plan).
-# Our application.properties reads: server.port=${PORT:8081}
-# Spring Boot automatically listens on whatever port Back4App injects.
+# Railway injects PORT at runtime (usually a random port).
+# Our application.properties reads: server.port=${PORT:8080}
+# Spring Boot automatically listens on whatever port Railway injects.
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

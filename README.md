@@ -72,21 +72,19 @@ src/
 
 ## 🚢 Deployment
 
-You can deploy this project to any static hosting provider:
+| Service  | Platform | URL |
+|----------|----------|-----|
+| **Frontend** | [Vercel](https://vercel.com) | `https://tech-simplified-sribatsa.vercel.app` |
+| **Backend**  | [Railway](https://railway.app) | `https://<your-service>.up.railway.app` |
+| **Database** | [Neon](https://neon.tech) | PostgreSQL (managed) |
 
-- **Vercel**: Connect your GitHub repo at [vercel.com](https://vercel.com)
-- **Netlify**: Drag & drop your `dist/` folder or connect via Git at [netlify.com](https://netlify.com)
-- **GitHub Pages**: Use the `gh-pages` package to deploy the `dist/` folder
+See **[`DEPLOY_RAILWAY.md`](./DEPLOY_RAILWAY.md)** for the full step-by-step Railway deployment guide.
 
-Build the production bundle first:
+Build the frontend production bundle:
 
 ```sh
 npm run build
 ```
-
-## 🌐 Custom Domain
-
-Most hosting providers (Vercel, Netlify, etc.) support custom domain configuration from their dashboard settings.
 
 ## � Author
 
