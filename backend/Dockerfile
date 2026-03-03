@@ -16,9 +16,9 @@ WORKDIR /app
 
 COPY --from=build /app/target/tech-simplified-backend-0.0.1-SNAPSHOT.jar app.jar
 
-# Railway injects PORT at runtime (usually a random port).
+# Render injects PORT at runtime (usually 8080 on free tier).
 # Our application.properties reads: server.port=${PORT:8080}
-# Spring Boot automatically listens on whatever port Railway injects.
+# Spring Boot automatically listens on whatever port Render injects.
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
