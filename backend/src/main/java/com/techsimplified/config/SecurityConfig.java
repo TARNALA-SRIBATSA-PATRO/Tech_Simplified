@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,12 +35,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public: read blogs
                 .requestMatchers(HttpMethod.GET, "/api/blogs", "/api/blogs/**").permitAll()
-                // Public: subscribe & verify OTP (path-only — HttpMethod matching caused 403 on Render)
-                .requestMatchers("/api/subscribers/subscribe").permitAll()
-                .requestMatchers("/api/subscribers/verify").permitAll()
-                // Public: admin OTP request & verify
-                .requestMatchers("/api/admin/otp").permitAll()
-                .requestMatchers("/api/admin/login").permitAll()
+                // Public: subscribe & verify OTP — use AntPathRequestMatcher to bypass
+                // MvcRequestMatcher/HandlerMappingIntrospector which fails on Render's proxy
+                .requestMatchers(new AntPathRequestMatcher("/api/subscribers/subscribe")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/subscribers/verify")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/admin/otp")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/admin/login")).permitAll()
                 // Everything else requires JWT
                 .anyRequest().authenticated()
             )
