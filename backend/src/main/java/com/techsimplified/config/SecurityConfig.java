@@ -34,15 +34,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public: read blogs
                 .requestMatchers(HttpMethod.GET, "/api/blogs", "/api/blogs/**").permitAll()
-                // Public: subscribe & verify OTP
-                .requestMatchers(HttpMethod.POST, "/api/subscribers/subscribe").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/subscribers/verify").permitAll()
+                // Public: subscribe & verify OTP (path-only — HttpMethod matching caused 403 on Render)
+                .requestMatchers("/api/subscribers/subscribe").permitAll()
+                .requestMatchers("/api/subscribers/verify").permitAll()
                 // Public: admin OTP request & verify
-                .requestMatchers(HttpMethod.POST, "/api/admin/otp").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/admin/login").permitAll()
+                .requestMatchers("/api/admin/otp").permitAll()
+                .requestMatchers("/api/admin/login").permitAll()
                 // Everything else requires JWT
                 .anyRequest().authenticated()
-
             )
             .addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
