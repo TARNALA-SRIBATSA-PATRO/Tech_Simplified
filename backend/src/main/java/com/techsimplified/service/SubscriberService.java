@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -73,16 +74,20 @@ public class SubscriberService {
         return false;
     }
 
-    /** Send a newsletter message to all verified subscribers */
+    /** Send a newsletter message to all verified subscribers (async) */
     public void sendNewsletter(String subject, String body) {
         List<Subscriber> verified = subscriberRepository.findByVerifiedTrue();
-        verified.forEach(sub -> {
-            SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setTo(sub.getEmail());
-            msg.setSubject(subject);
-            msg.setText(body);
-            mailSender.send(msg);
-        });
+        verified.forEach(sub -> CompletableFuture.runAsync(() -> {
+            try {
+                SimpleMailMessage msg = new SimpleMailMessage();
+                msg.setTo(sub.getEmail());
+                msg.setSubject(subject);
+                msg.setText(body);
+                mailSender.send(msg);
+            } catch (Exception e) {
+                System.err.println("Newsletter send failed for " + sub.getEmail() + ": " + e.getMessage());
+            }
+        }));
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
@@ -91,12 +96,22 @@ public class SubscriberService {
         String otp = String.format("%06d", new Random().nextInt(999999));
         sub.setOtp(otp);
         sub.setOtpExpiresAt(Instant.now().plusSeconds(600)); // 10 min
-        subscriberRepository.save(sub);
+        subscriberRepository.save(sub); // Save synchronously before returning
 
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setTo(sub.getEmail());
-        msg.setSubject("Tech Simplified — Verify Your Email");
-        msg.setText("Your verification OTP is: " + otp + "\n\nThis code expires in 10 minutes.");
-        mailSender.send(msg);
+        // Send email in background so the HTTP response is immediate
+        final String emailTo = sub.getEmail();
+        final String otpCode = otp;
+        CompletableFuture.runAsync(() -> {
+            try {
+                SimpleMailMessage msg = new SimpleMailMessage();
+                msg.setTo(emailTo);
+                msg.setSubject("Tech Simplified — Verify Your Email");
+                msg.setText("Your verification OTP is: " + otpCode + "\n\nThis code expires in 10 minutes.");
+                mailSender.send(msg);
+                System.out.println("Subscriber OTP email sent to: " + emailTo);
+            } catch (Exception e) {
+                System.err.println("Subscriber OTP email failed: " + e.getClass().getSimpleName() + " — " + e.getMessage());
+            }
+        });
     }
 }

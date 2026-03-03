@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
@@ -36,14 +37,25 @@ public class AdminAuthController {
         OTP_STORE.clear(); // Only one valid OTP at a time
         OTP_STORE.put(otp, Instant.now().plusSeconds(300)); // expires in 5 min
 
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setTo(adminEmail);
-        msg.setSubject("Tech Simplified — Admin Login OTP");
-        msg.setText(
-            "Your admin login OTP is: " + otp +
-            "\n\nThis code expires in 5 minutes.\n\nIf you did not request this, ignore this email."
-        );
-        mailSender.send(msg);
+        // Send email asynchronously so the HTTP response is immediate.
+        // Render's LB has a short response timeout; blocking on SMTP caused 403.
+        final String otpToSend = otp;
+        final String recipient = adminEmail;
+        CompletableFuture.runAsync(() -> {
+            try {
+                SimpleMailMessage msg = new SimpleMailMessage();
+                msg.setTo(recipient);
+                msg.setSubject("Tech Simplified — Admin Login OTP");
+                msg.setText(
+                    "Your admin login OTP is: " + otpToSend +
+                    "\n\nThis code expires in 5 minutes.\n\nIf you did not request this, ignore this email."
+                );
+                mailSender.send(msg);
+                System.out.println("OTP email sent successfully to: " + recipient);
+            } catch (Exception e) {
+                System.err.println("Failed to send OTP email: " + e.getClass().getSimpleName() + " — " + e.getMessage());
+            }
+        });
 
         return ResponseEntity.ok(Map.of("message", "OTP sent to admin email"));
     }
