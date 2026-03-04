@@ -1,6 +1,7 @@
 package com.techsimplified.controller;
 
 import com.techsimplified.dto.SubscriberRequest;
+import com.techsimplified.entity.MessageLog;
 import com.techsimplified.entity.Subscriber;
 import com.techsimplified.service.SubscriberService;
 import jakarta.validation.Valid;
@@ -48,11 +49,24 @@ public class SubscriberController {
                 : ResponseEntity.notFound().build();
     }
 
+    /** DELETE /api/subscribers/bulk — admin only */
+    @DeleteMapping("/bulk")
+    public ResponseEntity<Void> deleteSubscribersBulk(@RequestBody BulkDeleteRequest req) {
+        subscriberService.deleteSubscribers(req.getIds());
+        return ResponseEntity.noContent().build();
+    }
+
     /** POST /api/subscribers/newsletter — admin only */
     @PostMapping("/newsletter")
     public ResponseEntity<Map<String, String>> sendNewsletter(@RequestBody NewsletterRequest req) {
-        subscriberService.sendNewsletter(req.getSubject(), req.getBody());
+        subscriberService.sendNewsletter(req.getSubject(), req.getBody(), req.getRecipients());
         return ResponseEntity.ok(Map.of("status", "sent"));
+    }
+
+    /** GET /api/subscribers/messages — admin only */
+    @GetMapping("/messages")
+    public List<MessageLog> getMessageLogs() {
+        return subscriberService.getMessageLogs();
     }
 
     // ── Inner DTOs ─────────────────────────────────────────────────────────────
@@ -67,5 +81,11 @@ public class SubscriberController {
     static class NewsletterRequest {
         private String subject;
         private String body;
+        private List<String> recipients; // null or empty = send to all
+    }
+
+    @Data
+    static class BulkDeleteRequest {
+        private List<UUID> ids;
     }
 }

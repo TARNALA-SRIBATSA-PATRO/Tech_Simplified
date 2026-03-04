@@ -99,6 +99,15 @@ export interface ApiSubscriber {
   subscribedAt: string;
 }
 
+export interface ApiMessageLog {
+  id: string;
+  subject: string;
+  bodyBlocks: string;
+  sentAt: string;
+  recipientCount: number;
+  recipients: string; // comma-separated emails
+}
+
 export async function apiSubscribe(email: string): Promise<{ status: string }> {
   const res = await fetch(`${BASE}/subscribers/subscribe`, {
     method: 'POST',
@@ -130,11 +139,29 @@ export async function apiDeleteSubscriber(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete subscriber');
 }
 
-export async function apiSendNewsletter(subject: string, body: string): Promise<void> {
+export async function apiDeleteSubscribersBulk(ids: string[]): Promise<void> {
+  const res = await fetch(`${BASE}/subscribers/bulk`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error('Failed to delete subscribers');
+}
+
+export async function apiSendNewsletter(
+  subject: string,
+  body: string,
+  recipients?: string[]
+): Promise<void> {
   const res = await fetch(`${BASE}/subscribers/newsletter`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ subject, body }),
+    body: JSON.stringify({ subject, body, recipients: recipients ?? [] }),
   });
   if (!res.ok) throw new Error('Failed to send newsletter');
+}
+
+export async function apiGetMessageLogs(): Promise<ApiMessageLog[]> {
+  const res = await fetch(`${BASE}/subscribers/messages`, { headers: authHeaders() });
+  return handle<ApiMessageLog[]>(res);
 }
