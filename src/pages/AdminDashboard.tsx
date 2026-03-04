@@ -464,21 +464,23 @@ export default function AdminDashboard() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-5xl">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-secondary mb-6">
-          <TabsTrigger value="blogs" className="gap-1">
-            <FileText className="h-4 w-4" /> Blogs
-            {blogs.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{blogs.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="subscribers" className="gap-1">
-            <Users className="h-4 w-4" /> Subscribers
-            {subscribers.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{subscribers.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="gap-1">
-            <MessageSquare className="h-4 w-4" /> Messages
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto mb-6">
+          <TabsList className="bg-secondary w-max min-w-full">
+            <TabsTrigger value="blogs" className="gap-1 flex-1">
+              <FileText className="h-4 w-4" /> Blogs
+              {blogs.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{blogs.length}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="subscribers" className="gap-1 flex-1">
+              <Users className="h-4 w-4" /> Subscribers
+              {subscribers.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{subscribers.length}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-1 flex-1">
+              <MessageSquare className="h-4 w-4" /> Messages
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── BLOGS TAB ── */}
         <TabsContent value="blogs">
@@ -499,28 +501,30 @@ export default function AdminDashboard() {
               <BlockEditor blocks={blocks} onChange={setBlocks} />
               {/* Notify toggle — only shown for new posts */}
               {!editingId && (
-                <div className="flex items-center gap-6 px-1 py-2">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 py-2">
                   <span className="text-sm font-medium text-muted-foreground">Notify subscribers?</span>
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
-                    <input
-                      type="radio"
-                      name="notifySubscribers"
-                      checked={notifySubscribers === true}
-                      onChange={() => setNotifySubscribers(true)}
-                      className="accent-primary"
-                    />
-                    <span>Yes, notify</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
-                    <input
-                      type="radio"
-                      name="notifySubscribers"
-                      checked={notifySubscribers === false}
-                      onChange={() => setNotifySubscribers(false)}
-                      className="accent-primary"
-                    />
-                    <span>Don't notify</span>
-                  </label>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="radio"
+                        name="notifySubscribers"
+                        checked={notifySubscribers === true}
+                        onChange={() => setNotifySubscribers(true)}
+                        className="accent-primary"
+                      />
+                      <span>Yes, notify</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="radio"
+                        name="notifySubscribers"
+                        checked={notifySubscribers === false}
+                        onChange={() => setNotifySubscribers(false)}
+                        className="accent-primary"
+                      />
+                      <span>Don't notify</span>
+                    </label>
+                  </div>
                 </div>
               )}
               <div className="flex gap-2 flex-wrap">
