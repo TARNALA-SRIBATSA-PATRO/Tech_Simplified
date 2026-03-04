@@ -164,16 +164,20 @@ function blocksToText(blocks: ContentBlock[]): string {
 }
 
 // ── Blocks to simple HTML (for email htmlContent) ────────────────────────────
-function blocksToHtml(blocks: ContentBlock[]): string {
-  return blocks.map(b => {
+function blocksToHtml(blocks: ContentBlock[], subject?: string): string {
+  const heading = subject
+    ? `<h2 style="margin:0 0 20px;font-size:22px;font-weight:700;color:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">${subject}</h2>`
+    : '';
+  const body = blocks.map(b => {
     if (b.type === 'text')
       return `<p style="font-size:15px;color:#cccccc;line-height:1.8;font-family:Arial,Helvetica,sans-serif;white-space:pre-wrap;margin:0 0 16px;">${b.content}</p>`;
     if (b.type === 'image')
       return `<img src="${b.content}" alt="" style="max-width:100%;border-radius:8px;margin:0 0 16px;display:block;"/>`;
     if (b.type === 'video')
-      return `<a href="${b.content}" style="color:#f97316;font-size:14px;font-family:Arial,Helvetica,sans-serif;">${b.content}</a>`;
+      return `<p style="margin:0 0 16px;"><a href="${b.content}" style="color:#f97316;font-size:14px;font-family:Arial,Helvetica,sans-serif;">${b.content}</a></p>`;
     return '';
   }).join('');
+  return heading + body;
 }
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
@@ -353,7 +357,7 @@ export default function AdminDashboard() {
 
     setSending(true);
     try {
-      const htmlBody = blocksToHtml(msgBlocks);
+      const htmlBody = blocksToHtml(msgBlocks, msgSubject.trim());
       const recipients = sendToMode === 'specific' ? msgRecipients : [];
       await apiSendNewsletter(msgSubject.trim(), htmlBody, recipients);
       toast({

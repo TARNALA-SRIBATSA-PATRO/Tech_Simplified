@@ -92,15 +92,13 @@ public class SubscriberService {
                     .collect(Collectors.toList());
         }
 
-        // Build readable HTML from blocks JSON (frontend sends serialised blocks)
-        String htmlBody =
-            "<h2 style='margin:0 0 16px;font-size:22px;font-weight:700;color:#f0f0f0;" +
-            "font-family:Arial,Helvetica,sans-serif;'>" + subject + "</h2>" +
-            "<div style='font-size:15px;color:#cccccc;line-height:1.8;" +
-            "font-family:Arial,Helvetica,sans-serif;white-space:pre-wrap;'>" + bodyBlocks + "</div>";
+        // The frontend already sends fully-formed HTML (via blocksToHtml).
+        // Pass it straight through — do NOT re-wrap in another HTML element.
+        // Strip tags for the plain-text fallback.
+        String textFallback = bodyBlocks.replaceAll("<[^>]+>", "").trim();
 
         targets.forEach(sub ->
-            emailService.sendHtmlAsync(sub.getEmail(), subject, htmlBody, bodyBlocks)
+            emailService.sendHtmlAsync(sub.getEmail(), subject, bodyBlocks, textFallback)
         );
 
         // Save message log
