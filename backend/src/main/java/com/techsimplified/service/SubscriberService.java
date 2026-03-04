@@ -93,15 +93,27 @@ public class SubscriberService {
         subscriberRepository.save(sub); // Save synchronously
 
         String htmlBody =
-            "<h2 style='margin:0 0 8px;font-size:22px;font-weight:700;color:#f0f0f0;'>Verify your email</h2>" +
-            "<p style='margin:0 0 24px;font-size:15px;color:#888888;line-height:1.6;'>" +
-            "  Enter the code below to complete your subscription to Tech Simplified." +
+            "<h2 style='margin:0 0 10px;font-size:22px;font-weight:700;color:#f0f0f0;" +
+            "font-family:Arial,Helvetica,sans-serif;'>Verify your email</h2>" +
+            "<p style='margin:0 0 28px;font-size:15px;color:#aaaaaa;line-height:1.7;" +
+            "font-family:Arial,Helvetica,sans-serif;'>" +
+            "Enter the code below to complete your subscription to Tech Simplified." +
             "</p>" +
-            "<div style='background:#0a0a0a;border:1px solid #f97316;border-radius:10px;padding:20px 24px;" +
-            "            text-align:center;margin-bottom:24px;'>" +
-            "  <span style='font-size:36px;font-weight:700;letter-spacing:10px;color:#f97316;'>" + otp + "</span>" +
-            "</div>" +
-            "<p style='margin:0;font-size:13px;color:#666666;'>This code expires in <strong style='color:#888888;'>10 minutes</strong>. " +
+            // OTP box — large, easy to tap & select
+            "<table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom:12px;'>" +
+            "<tr><td align='center' style='background-color:#0d0d0d;border:1px solid #f97316;" +
+            "border-radius:10px;padding:24px 16px;'>" +
+            "<span style='font-size:40px;font-weight:700;letter-spacing:12px;color:#f97316;" +
+            "font-family:Courier New,Courier,monospace;user-select:all;cursor:pointer;'>" + otp + "</span>" +
+            "</td></tr>" +
+            "</table>" +
+            // Hint
+            "<p style='margin:0 0 24px;font-size:12px;color:#555555;text-align:center;" +
+            "font-family:Arial,Helvetica,sans-serif;'>Tap the code to select it, then copy</p>" +
+            // Expiry note
+            "<p style='margin:0;font-size:13px;color:#777777;line-height:1.6;" +
+            "font-family:Arial,Helvetica,sans-serif;'>" +
+            "This code expires in <strong style='color:#aaaaaa;'>10 minutes</strong>. " +
             "If you didn't request this, you can safely ignore this email.</p>";
 
         String textFallback = "Your Tech Simplified verification OTP is: " + otp + "\n\nThis code expires in 10 minutes.";
