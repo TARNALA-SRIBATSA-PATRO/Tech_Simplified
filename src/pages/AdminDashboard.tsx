@@ -201,6 +201,7 @@ export default function AdminDashboard() {
   const [title, setTitle] = useState('');
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [saving, setSaving] = useState(false);
+  const [notifySubscribers, setNotifySubscribers] = useState(true);
 
   // ── Subscriber selection state ────────────────────────────────────────────
   const [selectedSubs, setSelectedSubs] = useState<Set<string>>(new Set());
@@ -267,8 +268,13 @@ export default function AdminDashboard() {
         await apiUpdateBlog(editingId, title.trim(), contentJson);
         toast({ title: 'Blog updated!' });
       } else {
-        await apiCreateBlog(title.trim(), contentJson);
-        toast({ title: 'Blog published! Subscribers notified.' });
+        await apiCreateBlog(title.trim(), contentJson, notifySubscribers);
+        toast({
+          title: 'Blog published!',
+          description: notifySubscribers
+            ? 'Subscribers have been notified by email.'
+            : 'No email notification sent.',
+        });
       }
       resetEditor();
       fetchBlogs();
@@ -297,7 +303,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const resetEditor = () => { setEditingId(null); setTitle(''); setBlocks([]); };
+  const resetEditor = () => { setEditingId(null); setTitle(''); setBlocks([]); setNotifySubscribers(true); };
 
   // ── Subscriber selection ────────────────────────────────────────────────────
   const allSubIds = subscribers.map(s => s.id);
@@ -414,6 +420,32 @@ export default function AdminDashboard() {
                 className="bg-secondary border-border text-lg font-medium"
               />
               <BlockEditor blocks={blocks} onChange={setBlocks} />
+              {/* Notify toggle — only shown for new posts */}
+              {!editingId && (
+                <div className="flex items-center gap-6 px-1 py-2">
+                  <span className="text-sm font-medium text-muted-foreground">Notify subscribers?</span>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input
+                      type="radio"
+                      name="notifySubscribers"
+                      checked={notifySubscribers === true}
+                      onChange={() => setNotifySubscribers(true)}
+                      className="accent-primary"
+                    />
+                    <span>Yes, notify</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input
+                      type="radio"
+                      name="notifySubscribers"
+                      checked={notifySubscribers === false}
+                      onChange={() => setNotifySubscribers(false)}
+                      className="accent-primary"
+                    />
+                    <span>Don't notify</span>
+                  </label>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button onClick={handleSaveBlog} disabled={saving} className="bg-primary hover:bg-primary/90">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? 'Update Blog' : 'Publish Blog'}

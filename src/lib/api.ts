@@ -64,11 +64,11 @@ export async function apiGetBlog(id: string): Promise<ApiBlog> {
   return handle<ApiBlog>(res);
 }
 
-export async function apiCreateBlog(title: string, content: string): Promise<ApiBlog> {
+export async function apiCreateBlog(title: string, content: string, notify = true): Promise<ApiBlog> {
   const res = await fetch(`${BASE}/blogs`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ title, content }),
+    body: JSON.stringify({ title, content, notifySubscribers: notify }),
   });
   return handle<ApiBlog>(res);
 }

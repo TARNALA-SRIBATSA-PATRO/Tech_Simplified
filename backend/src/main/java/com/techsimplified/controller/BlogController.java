@@ -39,28 +39,32 @@ public class BlogController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /** POST /api/blogs — admin only; triggers subscriber email notifications */
+    /** POST /api/blogs — admin only; optionally triggers subscriber email notifications */
     @PostMapping
     public ResponseEntity<Blog> createBlog(@Valid @RequestBody BlogRequest request) {
         Blog blog = blogService.createBlog(request);
 
-        // Send notification to all verified subscribers
-        String blogUrl = frontendUrl + "/blog/" + blog.getId();
-        String subject = "New Post: " + blog.getTitle();
-        String body =
-            "Hey there!\n\n" +
-            "A new blog post has been published on Tech Simplified:\n\n" +
-            "\"" + blog.getTitle() + "\"\n\n" +
-            "Read it here: " + blogUrl + "\n\n" +
-            "---\n" +
-            "Tech Simplified by Sribatsa\n" +
-            "To unsubscribe, reply to this email.";
+        boolean shouldNotify = request.getNotifySubscribers() == null || request.getNotifySubscribers();
 
-        try {
-            subscriberService.sendNewsletter(subject, body, java.util.Collections.emptyList());
-        } catch (Exception e) {
-            // Don't fail blog creation if email fails
-            System.err.println("Newsletter send failed: " + e.getMessage());
+        if (shouldNotify) {
+            // Send notification to all verified subscribers
+            String blogUrl = frontendUrl + "/blog/" + blog.getId();
+            String subject = "New Post: " + blog.getTitle();
+            String body =
+                "Hey there!\n\n" +
+                "A new blog post has been published on Tech Simplified:\n\n" +
+                "\"" + blog.getTitle() + "\"\n\n" +
+                "Read it here: " + blogUrl + "\n\n" +
+                "---\n" +
+                "Tech Simplified by Sribatsa\n" +
+                "To unsubscribe, reply to this email.";
+
+            try {
+                subscriberService.sendNewsletter(subject, body, java.util.Collections.emptyList());
+            } catch (Exception e) {
+                // Don't fail blog creation if email fails
+                System.err.println("Newsletter send failed: " + e.getMessage());
+            }
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(blog);
