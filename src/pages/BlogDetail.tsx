@@ -115,8 +115,8 @@ export default function BlogDetail() {
   const date = new Date(blog.created_at);
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container mx-auto max-w-3xl px-4 py-8 sm:py-12">
+      <div className="flex items-center justify-between mb-8 gap-2 flex-wrap">
         <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
           <Link to="/"><ArrowLeft className="mr-2 h-4 w-4" /> Back</Link>
         </Button>
@@ -137,9 +137,9 @@ export default function BlogDetail() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">{blog.title}</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-4">{blog.title}</h1>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-10">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground mb-10">
           <span className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             {date.toLocaleDateString()}
@@ -157,7 +157,7 @@ export default function BlogDetail() {
         </div>
 
         {/* Share button at bottom too */}
-        <div className="mt-14 pt-8 border-t border-border/50 flex justify-center">
+        <div className="mt-10 sm:mt-14 pt-8 border-t border-border/50 flex justify-center">
           <Button
             variant="outline"
             className="gap-2 border-primary/40 text-primary hover:bg-primary/10"

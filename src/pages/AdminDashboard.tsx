@@ -545,53 +545,55 @@ export default function AdminDashboard() {
               ) : blogs.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-6">No blogs yet — create your first one above!</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {blogs.map(blog => {
-                      const d = new Date(blog.createdAt);
-                      return (
-                        <TableRow key={blog.id}>
-                          <TableCell className="font-medium">{blog.title}</TableCell>
-                          <TableCell className="text-muted-foreground">{d.toLocaleDateString()}</TableCell>
-                          <TableCell className="text-muted-foreground">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
-                          <TableCell className="text-right space-x-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(blog)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-card border-border">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Blog</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Delete <span className="font-medium text-foreground">"{blog.title}"</span>? This cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="border-border">Cancel</AlertDialogCancel>
-                                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => handleDelete(blog.id)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead className="hidden sm:table-cell">Date</TableHead>
+                        <TableHead className="hidden sm:table-cell">Time</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {blogs.map(blog => {
+                        const d = new Date(blog.createdAt);
+                        return (
+                          <TableRow key={blog.id}>
+                            <TableCell className="font-medium">{blog.title}</TableCell>
+                            <TableCell className="text-muted-foreground hidden sm:table-cell">{d.toLocaleDateString()}</TableCell>
+                            <TableCell className="text-muted-foreground hidden sm:table-cell">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                            <TableCell className="text-right space-x-1">
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(blog)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-card border-border">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Blog</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Delete <span className="font-medium text-foreground">"{blog.title}"</span>? This cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="border-border">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => handleDelete(blog.id)}>Delete</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -601,9 +603,9 @@ export default function AdminDashboard() {
         <TabsContent value="subscribers">
           {/* Bulk action bar */}
           {someSelected && (
-            <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-primary/10 border border-primary/30 rounded-lg">
+            <div className="flex flex-wrap items-center gap-2 mb-4 px-4 py-3 bg-primary/10 border border-primary/30 rounded-lg">
               <span className="text-sm font-medium text-primary">{selectedSubs.size} selected</span>
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 ml-auto flex-wrap">
                 <Button size="sm" variant="outline" className="gap-1.5 border-border"
                   onClick={handleMessageSelected}>
                   <Mail className="h-3.5 w-3.5" /> Message
@@ -643,77 +645,77 @@ export default function AdminDashboard() {
               ) : subscribers.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-6">No verified subscribers yet.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <button onClick={toggleAll} className="flex items-center justify-center">
-                          {allSelected
-                            ? <CheckSquare className="h-4 w-4 text-primary" />
-                            : someSelected
-                              ? <CheckSquare className="h-4 w-4 text-primary/50" />
-                              : <Square className="h-4 w-4 text-muted-foreground" />}
-                        </button>
-                      </TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Subscribed On</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscribers.map(sub => {
-                      const d = new Date(sub.subscribedAt);
-                      const isChecked = selectedSubs.has(sub.id);
-                      return (
-                        <TableRow key={sub.id} className={isChecked ? 'bg-primary/5' : ''}>
-                          <TableCell>
-                            <button onClick={() => toggleSub(sub.id)} className="flex items-center justify-center">
-                              {isChecked
-                                ? <CheckSquare className="h-4 w-4 text-primary" />
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <button onClick={toggleAll} className="flex items-center justify-center">
+                            {allSelected
+                              ? <CheckSquare className="h-4 w-4 text-primary" />
+                              : someSelected
+                                ? <CheckSquare className="h-4 w-4 text-primary/50" />
                                 : <Square className="h-4 w-4 text-muted-foreground" />}
-                            </button>
-                          </TableCell>
-                          <TableCell className="font-medium">{sub.email}</TableCell>
-                          <TableCell className="text-muted-foreground">{d.toLocaleDateString()}</TableCell>
-                          <TableCell className="text-muted-foreground">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
-                          <TableCell className="text-right space-x-1">
-                            {/* Quick message for this subscriber */}
-                            <Button variant="ghost" size="icon" title="Send message"
-                              onClick={() => {
-                                setSendToMode('specific');
-                                setMsgRecipients([sub.email]);
-                                setActiveTab('messages');
-                              }}>
-                              <MessageSquare className="h-4 w-4" />
-                            </Button>
-                            {/* Delete single */}
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive">
-                                  <UserMinus className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-card border-border">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove Subscriber</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Remove <span className="font-medium text-foreground">{sub.email}</span>? This cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="border-border">Cancel</AlertDialogCancel>
-                                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => handleDeleteSingle(sub.id, sub.email)}>Remove</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                          </button>
+                        </TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="hidden sm:table-cell">Subscribed On</TableHead>
+                        <TableHead className="hidden sm:table-cell">Time</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscribers.map(sub => {
+                        const d = new Date(sub.subscribedAt);
+                        const isChecked = selectedSubs.has(sub.id);
+                        return (
+                          <TableRow key={sub.id} className={isChecked ? 'bg-primary/5' : ''}>
+                            <TableCell>
+                              <button onClick={() => toggleSub(sub.id)} className="flex items-center justify-center">
+                                {isChecked
+                                  ? <CheckSquare className="h-4 w-4 text-primary" />
+                                  : <Square className="h-4 w-4 text-muted-foreground" />}
+                              </button>
+                            </TableCell>
+                            <TableCell className="font-medium text-xs sm:text-sm break-all">{sub.email}</TableCell>
+                            <TableCell className="text-muted-foreground hidden sm:table-cell">{d.toLocaleDateString()}</TableCell>
+                            <TableCell className="text-muted-foreground hidden sm:table-cell">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                            <TableCell className="text-right space-x-1">
+                              <Button variant="ghost" size="icon" title="Send message"
+                                onClick={() => {
+                                  setSendToMode('specific');
+                                  setMsgRecipients([sub.email]);
+                                  setActiveTab('messages');
+                                }}>
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive">
+                                    <UserMinus className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-card border-border">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove Subscriber</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Remove <span className="font-medium text-foreground">{sub.email}</span>? This cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="border-border">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => handleDeleteSingle(sub.id, sub.email)}>Remove</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -818,14 +820,14 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
 
           {/* Floating action bar — top right */}
-          <div className="fixed top-4 right-4 z-[60] flex items-center gap-2">
+          <div className="fixed top-3 right-3 z-[60] flex items-center gap-1.5 flex-wrap justify-end">
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 border-border/60"
+              className="gap-1.5 border-border/60 bg-background/90 backdrop-blur-sm"
               onClick={() => setShowPreview(false)}
             >
-              <X className="h-4 w-4" /> Close Preview
+              <X className="h-4 w-4" /> <span className="sm:inline hidden">Close</span> Preview
             </Button>
 
             <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>

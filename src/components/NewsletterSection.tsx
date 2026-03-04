@@ -117,7 +117,7 @@ export function NewsletterSection() {
                 key="email"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex gap-2 max-w-md mx-auto"
+                className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto"
               >
                 <Input
                   type="email"

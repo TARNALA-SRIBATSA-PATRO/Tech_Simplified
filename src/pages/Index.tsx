@@ -21,11 +21,11 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="container mx-auto px-4 py-20 text-center">
+      <section className="container mx-auto px-4 py-12 sm:py-20 text-center">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4"
+          className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight mb-4"
         >
           Welcome to <span className="text-gradient">Tech Simplified</span>
         </motion.h1>
@@ -33,14 +33,14 @@ const Index = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-lg text-muted-foreground max-w-xl mx-auto"
+          className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto px-2"
         >
           Tech insights, tutorials, and stories — delivered fresh.
         </motion.p>
       </section>
 
       {/* Blog Grid */}
-      <section className="container mx-auto px-4 pb-16">
+      <section className="container mx-auto px-4 pb-12 sm:pb-16">
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -51,7 +51,7 @@ const Index = () => {
             <p className="text-sm mt-1">Head to the admin dashboard to create your first post!</p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {blogs.map((blog, i) => (
               <BlogCard key={blog.id} blog={blog} index={i} />
             ))}
