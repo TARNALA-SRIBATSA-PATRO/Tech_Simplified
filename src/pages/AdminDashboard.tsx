@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Trash2, Pencil, Send, FileText, Users, MessageSquare,
-  UserMinus, Loader2, X, Search, CheckSquare, Square, Mail,
+  UserMinus, Loader2, X, Search, CheckSquare, Square, Mail, Eye, Calendar, Clock,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -180,6 +180,48 @@ function blocksToHtml(blocks: ContentBlock[], subject?: string): string {
   return heading + body;
 }
 
+// ── YouTube ID helper (for preview) ───────────────────────────────────────
+function extractYoutubeId(url: string): string | null {
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+// ── Block renderer used inside the preview overlay ──────────────────────
+function BlockPreviewRenderer({ block }: { block: ContentBlock }) {
+  switch (block.type) {
+    case 'text':
+      return (
+        <div className="prose prose-invert prose-orange max-w-none">
+          {block.content.split('\n').map((p, i) => (
+            <p key={i} className="text-foreground/90 leading-relaxed mb-4">{p}</p>
+          ))}
+        </div>
+      );
+    case 'image':
+      return (
+        <div className="rounded-xl overflow-hidden border border-border/50">
+          <img src={block.content} alt="" className="w-full object-cover" loading="lazy" />
+        </div>
+      );
+    case 'video': {
+      const ytId = extractYoutubeId(block.content);
+      if (!ytId) return <p className="text-destructive text-sm">Invalid YouTube URL</p>;
+      return (
+        <div className="aspect-video rounded-xl overflow-hidden border border-border/50">
+          <iframe
+            src={`https://www.youtube.com/embed/${ytId}`}
+            title="Video"
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+    default: return null;
+  }
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
@@ -202,6 +244,11 @@ export default function AdminDashboard() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [saving, setSaving] = useState(false);
   const [notifySubscribers, setNotifySubscribers] = useState(true);
+
+  // ── Preview state ──────────────────────────────────────────────────
+  const [showPreview, setShowPreview] = useState(false);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [previewNotify, setPreviewNotify] = useState(true);
 
   // ── Subscriber selection state ────────────────────────────────────────────
   const [selectedSubs, setSelectedSubs] = useState<Set<string>>(new Set());
@@ -303,7 +350,37 @@ export default function AdminDashboard() {
     }
   };
 
-  const resetEditor = () => { setEditingId(null); setTitle(''); setBlocks([]); setNotifySubscribers(true); };
+  const resetEditor = () => { setEditingId(null); setTitle(''); setBlocks([]); setNotifySubscribers(true); setShowPreview(false); };
+
+  const openPreview = () => {
+    if (!title.trim() && blocks.length === 0) {
+      toast({ title: 'Nothing to preview', description: 'Add a title and some content first.', variant: 'destructive' });
+      return;
+    }
+    setPreviewNotify(notifySubscribers);
+    setShowPreview(true);
+  };
+
+  const handlePublishFromPreview = async () => {
+    if (!title.trim()) { toast({ title: 'Title required', variant: 'destructive' }); return; }
+    if (blocks.length === 0) { toast({ title: 'Add at least one content block', variant: 'destructive' }); return; }
+    setSaving(true);
+    try {
+      const contentJson = JSON.stringify(blocks);
+      await apiCreateBlog(title.trim(), contentJson, previewNotify);
+      toast({
+        title: 'Blog published!',
+        description: previewNotify ? 'Subscribers have been notified.' : 'No email notification sent.',
+      });
+      resetEditor();
+      fetchBlogs();
+      setPublishConfirmOpen(false);
+    } catch (e: unknown) {
+      toast({ title: 'Failed to publish', description: String(e), variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // ── Subscriber selection ────────────────────────────────────────────────────
   const allSubIds = subscribers.map(s => s.id);
@@ -446,10 +523,15 @@ export default function AdminDashboard() {
                   </label>
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button onClick={handleSaveBlog} disabled={saving} className="bg-primary hover:bg-primary/90">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? 'Update Blog' : 'Publish Blog'}
                 </Button>
+                {!editingId && (
+                  <Button variant="outline" onClick={openPreview} disabled={saving} className="gap-1.5 border-border">
+                    <Eye className="h-4 w-4" /> Preview
+                  </Button>
+                )}
                 {editingId && <Button variant="ghost" onClick={resetEditor}>Cancel</Button>}
               </div>
             </CardContent>
@@ -730,6 +812,121 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ── BLOG PREVIEW OVERLAY ──────────────────────────────────────────────── */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+
+          {/* Floating action bar — top right */}
+          <div className="fixed top-4 right-4 z-[60] flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-border/60"
+              onClick={() => setShowPreview(false)}
+            >
+              <X className="h-4 w-4" /> Close Preview
+            </Button>
+
+            <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" className="bg-primary hover:bg-primary/90 gap-1.5">
+                  <Send className="h-4 w-4" /> Publish
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-card border-border max-w-md">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Ready to publish?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will make{' '}
+                    <span className="font-medium text-foreground">"{title || 'this post'}"</span>{' '}
+                    live on your site.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                {/* Notify toggle inside confirm dialog */}
+                <div className="flex items-center gap-5 py-1">
+                  <span className="text-sm font-medium text-muted-foreground">Notify subscribers?</span>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input
+                      type="radio"
+                      name="previewNotify"
+                      checked={previewNotify === true}
+                      onChange={() => setPreviewNotify(true)}
+                      className="accent-primary"
+                    />
+                    Yes, notify
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input
+                      type="radio"
+                      name="previewNotify"
+                      checked={previewNotify === false}
+                      onChange={() => setPreviewNotify(false)}
+                      className="accent-primary"
+                    />
+                    Don't notify
+                  </label>
+                </div>
+
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="border-border">Go back</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={handlePublishFromPreview}
+                    disabled={saving}
+                  >
+                    {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    Yes, Publish!
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
+          {/* Preview content — mirrors BlogDetail layout */}
+          <div className="container mx-auto max-w-3xl px-4 py-16">
+            <div className="flex items-center gap-3 mb-8">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground gap-1"
+                onClick={() => setShowPreview(false)}
+              >
+                ← Back to Editor
+              </Button>
+              <span className="text-xs bg-primary/20 text-primary rounded-full px-3 py-1 font-medium tracking-wide">
+                Preview
+              </span>
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
+              {title || <span className="text-muted-foreground italic font-normal">Untitled post</span>}
+            </h1>
+
+            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-10">
+              <span className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                {new Date().toLocaleDateString()}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+
+            {blocks.length === 0 ? (
+              <p className="text-muted-foreground italic">No content blocks yet.</p>
+            ) : (
+              <div className="space-y-8">
+                {blocks.map(block => (
+                  <BlockPreviewRenderer key={block.id} block={block} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

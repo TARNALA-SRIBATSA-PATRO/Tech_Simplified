@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, Clock } from 'lucide-react';
 import { ApiBlog } from '@/lib/api';
@@ -21,12 +21,15 @@ function getPreview(contentJson: string): string {
 
 export function BlogCard({ blog, index }: { blog: ApiBlog; index: number }) {
   const date = new Date(blog.createdAt);
+  const navigate = useNavigate();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
+      onClick={() => navigate(`/blog/${blog.id}`)}
+      className="cursor-pointer"
     >
       <Card className="group h-full border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
         <CardHeader>
@@ -48,7 +51,8 @@ export function BlogCard({ blog, index }: { blog: ApiBlog; index: number }) {
           <p className="text-sm text-muted-foreground leading-relaxed">{getPreview(blog.content)}</p>
         </CardContent>
         <CardFooter>
-          <Button asChild variant="ghost" className="text-primary hover:text-primary hover:bg-primary/10">
+          <Button asChild variant="ghost" className="text-primary hover:text-primary hover:bg-primary/10"
+            onClick={e => e.stopPropagation()}>
             <Link to={`/blog/${blog.id}`}>Read More →</Link>
           </Button>
         </CardFooter>
