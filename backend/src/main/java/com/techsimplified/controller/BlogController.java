@@ -57,7 +57,7 @@ public class BlogController {
             "To unsubscribe, reply to this email.";
 
         try {
-            subscriberService.sendNewsletter(subject, body);
+            subscriberService.sendNewsletter(subject, body, java.util.Collections.emptyList());
         } catch (Exception e) {
             // Don't fail blog creation if email fails
             System.err.println("Newsletter send failed: " + e.getMessage());
