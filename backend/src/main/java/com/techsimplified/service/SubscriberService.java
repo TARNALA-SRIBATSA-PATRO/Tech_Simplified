@@ -74,8 +74,13 @@ public class SubscriberService {
     /** Send newsletter to all verified subscribers (async per subscriber) */
     public void sendNewsletter(String subject, String body) {
         List<Subscriber> verified = subscriberRepository.findByVerifiedTrue();
+
+        String htmlBody =
+            "<h2 style='margin:0 0 16px;font-size:22px;font-weight:700;color:#f0f0f0;'>" + subject + "</h2>" +
+            "<div style='font-size:15px;color:#cccccc;line-height:1.8;white-space:pre-wrap;'>" + body + "</div>";
+
         verified.forEach(sub ->
-            emailService.sendAsync(sub.getEmail(), subject, body)
+            emailService.sendHtmlAsync(sub.getEmail(), subject, htmlBody, body)
         );
     }
 
@@ -87,10 +92,25 @@ public class SubscriberService {
         sub.setOtpExpiresAt(Instant.now().plusSeconds(600)); // 10 min
         subscriberRepository.save(sub); // Save synchronously
 
-        emailService.sendAsync(
+        String htmlBody =
+            "<h2 style='margin:0 0 8px;font-size:22px;font-weight:700;color:#f0f0f0;'>Verify your email</h2>" +
+            "<p style='margin:0 0 24px;font-size:15px;color:#888888;line-height:1.6;'>" +
+            "  Enter the code below to complete your subscription to Tech Simplified." +
+            "</p>" +
+            "<div style='background:#0a0a0a;border:1px solid #f97316;border-radius:10px;padding:20px 24px;" +
+            "            text-align:center;margin-bottom:24px;'>" +
+            "  <span style='font-size:36px;font-weight:700;letter-spacing:10px;color:#f97316;'>" + otp + "</span>" +
+            "</div>" +
+            "<p style='margin:0;font-size:13px;color:#666666;'>This code expires in <strong style='color:#888888;'>10 minutes</strong>. " +
+            "If you didn't request this, you can safely ignore this email.</p>";
+
+        String textFallback = "Your Tech Simplified verification OTP is: " + otp + "\n\nThis code expires in 10 minutes.";
+
+        emailService.sendHtmlAsync(
             sub.getEmail(),
             "Tech Simplified — Verify Your Email",
-            "Your verification OTP is: " + otp + "\n\nThis code expires in 10 minutes."
+            htmlBody,
+            textFallback
         );
     }
 }

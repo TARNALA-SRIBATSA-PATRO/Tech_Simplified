@@ -1,4 +1,4 @@
-import { Flame, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { adminLogout } from '@/lib/store';
@@ -26,8 +26,7 @@ export function Navbar() {
             </p>
           </div>
         ) : (
-          <a href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Flame className="h-6 w-6 text-primary" />
+          <a href="/" className="font-bold text-xl">
             <span className="text-gradient">Tech Simplified</span>
           </a>
         )}
