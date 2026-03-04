@@ -59,7 +59,7 @@ export function Navbar() {
 
       {/* Logout confirmation dialog */}
       <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <AlertDialogContent className="bg-card border-border max-w-sm mx-4">
+        <AlertDialogContent className="bg-card border-border w-[calc(100vw-2rem)] max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Logout?</AlertDialogTitle>
             <AlertDialogDescription>
