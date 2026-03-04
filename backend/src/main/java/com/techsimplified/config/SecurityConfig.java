@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -26,6 +27,20 @@ public class SecurityConfig {
 
     private final JwtService jwtService;
 
+    /**
+     * Completely remove public endpoints from the Spring Security filter chain.
+     * These paths are NEVER touched by Spring Security — no CORS filter, no auth filter, nothing.
+     * This is the definitive fix for the MvcRequestMatcher/HandlerMappingIntrospector 403 issue.
+     */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.ignoring()
+            .requestMatchers(new AntPathRequestMatcher("/api/admin/otp"))
+            .requestMatchers(new AntPathRequestMatcher("/api/admin/login"))
+            .requestMatchers(new AntPathRequestMatcher("/api/subscribers/subscribe"))
+            .requestMatchers(new AntPathRequestMatcher("/api/subscribers/verify"));
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -35,12 +50,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public: read blogs
                 .requestMatchers(HttpMethod.GET, "/api/blogs", "/api/blogs/**").permitAll()
-                // Public: subscribe & verify OTP — use AntPathRequestMatcher to bypass
-                // MvcRequestMatcher/HandlerMappingIntrospector which fails on Render's proxy
-                .requestMatchers(new AntPathRequestMatcher("/api/subscribers/subscribe")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/subscribers/verify")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/admin/otp")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/admin/login")).permitAll()
                 // Everything else requires JWT
                 .anyRequest().authenticated()
             )
@@ -52,7 +61,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Allow the Vite dev server and any deployed frontend origin
         config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
