@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Trash2, Pencil, Send, FileText, Users, MessageSquare,
-  UserMinus, Loader2, X, Search, CheckSquare, Square, Mail, Eye, Calendar, Clock,
+  UserMinus, Loader2, X, Search, CheckSquare, Square, Mail, Eye, Calendar, Clock, Menu, ChevronDown,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -229,6 +229,7 @@ export default function AdminDashboard() {
 
   // ── Tab state (controlled so we can switch from Subscribers → Messages) ─────
   const [activeTab, setActiveTab] = useState('blogs');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Data state ────────────────────────────────────────────────────────────
   const [blogs, setBlogs] = useState<ApiBlog[]>([]);
@@ -253,6 +254,7 @@ export default function AdminDashboard() {
   // ── Subscriber selection state ────────────────────────────────────────────
   const [selectedSubs, setSelectedSubs] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [subSearch, setSubSearch] = useState('');
 
   // ── Message compose state ─────────────────────────────────────────────────
   const [sendToMode, setSendToMode] = useState<'all' | 'specific'>('all');
@@ -465,22 +467,57 @@ export default function AdminDashboard() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-5xl">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto mb-6">
-          <TabsList className="bg-secondary w-max min-w-full">
-            <TabsTrigger value="blogs" className="gap-1 flex-1">
-              <FileText className="h-4 w-4" /> Blogs
-              {blogs.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{blogs.length}</span>}
-            </TabsTrigger>
-            <TabsTrigger value="subscribers" className="gap-1 flex-1">
-              <Users className="h-4 w-4" /> Subscribers
-              {subscribers.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{subscribers.length}</span>}
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-1 flex-1">
-              <MessageSquare className="h-4 w-4" /> Messages
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setMobileMenuOpen(false); }}>
+
+        {/* ── Mobile dropdown nav (visible on small screens only) ── */}
+        <div className="relative mb-6 sm:hidden">
+          <button
+            onClick={() => setMobileMenuOpen(o => !o)}
+            className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-secondary border border-border/50 text-sm font-medium"
+          >
+            <span className="flex items-center gap-2">
+              {activeTab === 'blogs' && <><FileText className="h-4 w-4 text-primary" /> Blogs {blogs.length > 0 && <span className="text-xs bg-primary/20 text-primary rounded-full px-1.5">{blogs.length}</span>}</>}
+              {activeTab === 'subscribers' && <><Users className="h-4 w-4 text-primary" /> Subscribers {subscribers.length > 0 && <span className="text-xs bg-primary/20 text-primary rounded-full px-1.5">{subscribers.length}</span>}</>}
+              {activeTab === 'messages' && <><MessageSquare className="h-4 w-4 text-primary" /> Messages</>}
+            </span>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {mobileMenuOpen && (
+            <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border rounded-lg shadow-xl overflow-hidden">
+              {[{value:'blogs', icon:<FileText className="h-4 w-4" />, label:'Blogs', badge: blogs.length > 0 ? blogs.length : null},
+                {value:'subscribers', icon:<Users className="h-4 w-4" />, label:'Subscribers', badge: subscribers.length > 0 ? subscribers.length : null},
+                {value:'messages', icon:<MessageSquare className="h-4 w-4" />, label:'Messages', badge: null},
+              ].map(item => (
+                <button
+                  key={item.value}
+                  onClick={() => { setActiveTab(item.value); setMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-4 py-3 text-sm hover:bg-secondary transition-colors ${
+                    activeTab === item.value ? 'text-primary font-semibold bg-primary/10' : 'text-foreground'
+                  }`}
+                >
+                  <span className={activeTab === item.value ? 'text-primary' : 'text-muted-foreground'}>{item.icon}</span>
+                  {item.label}
+                  {item.badge && <span className="ml-auto text-xs bg-primary/20 text-primary rounded-full px-1.5">{item.badge}</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* ── Desktop tabs (visible on sm+ only) ── */}
+        <TabsList className="hidden sm:flex bg-secondary mb-6 w-full">
+          <TabsTrigger value="blogs" className="gap-1 flex-1">
+            <FileText className="h-4 w-4" /> Blogs
+            {blogs.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{blogs.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="subscribers" className="gap-1 flex-1">
+            <Users className="h-4 w-4" /> Subscribers
+            {subscribers.length > 0 && <span className="ml-1 text-xs bg-primary/20 text-primary rounded-full px-1.5">{subscribers.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="gap-1 flex-1">
+            <MessageSquare className="h-4 w-4" /> Messages
+          </TabsTrigger>
+        </TabsList>
 
         {/* ── BLOGS TAB ── */}
         <TabsContent value="blogs">
@@ -642,7 +679,26 @@ export default function AdminDashboard() {
           )}
 
           <Card className="bg-card border-border/50">
-            <CardHeader><CardTitle className="text-lg">Verified Subscribers</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-lg">Verified Subscribers</CardTitle>
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search by email..."
+                    value={subSearch}
+                    onChange={e => setSubSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md bg-secondary border border-border/60 outline-none focus:border-primary/60 transition-colors placeholder:text-muted-foreground"
+                  />
+                  {subSearch && (
+                    <button onClick={() => setSubSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
             <CardContent>
               {loadingSubs ? (
                 <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
@@ -669,7 +725,14 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subscribers.map(sub => {
+                      {subscribers.filter(s => s.email.toLowerCase().includes(subSearch.toLowerCase())).length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground text-sm py-6">
+                            No subscribers match "{subSearch}"
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                      {subscribers.filter(s => s.email.toLowerCase().includes(subSearch.toLowerCase())).map(sub => {
                         const d = new Date(sub.subscribedAt);
                         const isChecked = selectedSubs.has(sub.id);
                         return (
