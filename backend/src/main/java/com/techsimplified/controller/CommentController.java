@@ -68,7 +68,7 @@ public class CommentController {
 
     /** DELETE /api/blogs/{blogId}/comments/{commentId} — soft-delete (own comment only) */
     @DeleteMapping("/{commentId}")
-    public ResponseEntity<Void> deleteComment(
+    public ResponseEntity<?> deleteComment(
             @PathVariable UUID blogId,
             @PathVariable UUID commentId,
             @RequestHeader("Authorization") String authHeader) {

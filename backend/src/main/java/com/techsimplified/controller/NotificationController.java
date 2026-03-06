@@ -53,7 +53,7 @@ public class NotificationController {
 
     /** PATCH /api/user/notifications/{id}/read — mark single notification as read */
     @PatchMapping("/{id}/read")
-    public ResponseEntity<Void> markRead(
+    public ResponseEntity<?> markRead(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String authHeader) {
         return userAuthService.getSubscriberFromHeader(authHeader)
@@ -70,7 +70,7 @@ public class NotificationController {
 
     /** PATCH /api/user/notifications/read-all — mark all as read */
     @PatchMapping("/read-all")
-    public ResponseEntity<Void> markAllRead(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> markAllRead(@RequestHeader("Authorization") String authHeader) {
         return userAuthService.getSubscriberFromHeader(authHeader)
                 .map(sub -> {
                     notificationRepository.markAllReadBySubscriberId(sub.getId());
@@ -81,7 +81,7 @@ public class NotificationController {
 
     /** DELETE /api/user/notifications/{id} — delete single notification */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOne(
+    public ResponseEntity<?> deleteOne(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String authHeader) {
         return userAuthService.getSubscriberFromHeader(authHeader)
@@ -97,7 +97,7 @@ public class NotificationController {
 
     /** DELETE /api/user/notifications — delete all notifications for user */
     @DeleteMapping
-    public ResponseEntity<Void> deleteAll(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> deleteAll(@RequestHeader("Authorization") String authHeader) {
         return userAuthService.getSubscriberFromHeader(authHeader)
                 .map(sub -> {
                     notificationRepository.deleteBySubscriberId(sub.getId());

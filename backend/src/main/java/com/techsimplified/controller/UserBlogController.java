@@ -56,7 +56,7 @@ public class UserBlogController {
 
     /** DELETE /api/user/blogs/{id} — delete own submission */
     @DeleteMapping("/user/blogs/{id}")
-    public ResponseEntity<Void> delete(
+    public ResponseEntity<?> delete(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String authHeader) {
         return userAuthService.getSubscriberFromHeader(authHeader)
