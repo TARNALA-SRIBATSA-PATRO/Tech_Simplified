@@ -5,6 +5,7 @@ import com.techsimplified.entity.Subscriber;
 import com.techsimplified.repository.MessageLogRepository;
 import com.techsimplified.repository.SubscriberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -17,6 +18,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SubscriberService {
+
+    @Value("${frontend.url:https://tech-simplified-blogs.vercel.app}")
+    private String frontendUrl;
 
     private final SubscriberRepository subscriberRepository;
     private final MessageLogRepository messageLogRepository;
@@ -55,6 +59,9 @@ public class SubscriberService {
         sub.setOtp(null);
         sub.setOtpExpiresAt(null);
         subscriberRepository.save(sub);
+
+        // Send thank-you + profile setup invite
+        sendWelcomeEmail(sub);
         return true;
     }
 
@@ -152,6 +159,40 @@ public class SubscriberService {
             "Tech Simplified — Verify Your Email",
             htmlBody,
             "Your verification OTP is: " + otp + "\n\nExpires in 10 minutes."
+        );
+    }
+
+    private void sendWelcomeEmail(Subscriber sub) {
+        String loginUrl = frontendUrl + "/login";
+        String htmlBody =
+            "<h2 style='margin:0 0 12px;font-size:22px;font-weight:700;color:#f0f0f0;" +
+            "font-family:Arial,Helvetica,sans-serif;'>Welcome to Tech Simplified! 🎉</h2>" +
+            "<p style='margin:0 0 20px;font-size:15px;color:#aaaaaa;line-height:1.7;" +
+            "font-family:Arial,Helvetica,sans-serif;'>" +
+            "Thanks for subscribing! You're now part of our growing community." +
+            "</p>" +
+            "<p style='margin:0 0 20px;font-size:15px;color:#aaaaaa;line-height:1.7;" +
+            "font-family:Arial,Helvetica,sans-serif;'>" +
+            "You can now create a personal profile, write blogs, interact with our content, " +
+            "and get notified about activity on your posts. Click below to get started:" +
+            "</p>" +
+            "<table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom:24px;'>" +
+            "<tr><td align='center'>" +
+            "<a href='" + loginUrl + "' style='display:inline-block;background-color:#f97316;" +
+            "color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;" +
+            "text-decoration:none;padding:14px 32px;border-radius:8px;'>" +
+            "Log In to Your Profile \u2192</a>" +
+            "</td></tr>" +
+            "</table>" +
+            "<p style='margin:0;font-size:13px;color:#555555;line-height:1.6;" +
+            "font-family:Arial,Helvetica,sans-serif;'>" +
+            "If you didn't subscribe, you can safely ignore this email.</p>";
+
+        emailService.sendHtmlAsync(
+            sub.getEmail(),
+            "Welcome to Tech Simplified 🚀",
+            htmlBody,
+            "Welcome to Tech Simplified! Log in to set up your profile: " + loginUrl
         );
     }
 }

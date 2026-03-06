@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Plus, Trash2, Pencil, Send, FileText, Users, MessageSquare,
   UserMinus, Loader2, X, Search, CheckSquare, Square, Mail, Eye, Calendar, Clock, Menu, ChevronDown,
+  Inbox, CheckCircle2, XCircle, User,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
   apiGetBlogs, apiCreateBlog, apiUpdateBlog, apiDeleteBlog, ApiBlog,
   apiGetSubscribers, apiDeleteSubscriber, apiDeleteSubscribersBulk,
   apiSendNewsletter, ApiSubscriber, apiGetMessageLogs, ApiMessageLog,
+  apiAdminGetRequests, apiAdminApproveBlog, apiAdminRejectBlog, ApiUserBlogRequest,
 } from '@/lib/api';
 import { ContentBlock } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -235,9 +237,14 @@ export default function AdminDashboard() {
   const [blogs, setBlogs] = useState<ApiBlog[]>([]);
   const [subscribers, setSubs] = useState<ApiSubscriber[]>([]);
   const [messageLogs, setMessageLogs] = useState<ApiMessageLog[]>([]);
+  const [requests, setRequests] = useState<ApiUserBlogRequest[]>([]);
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [loadingSubs, setLoadingSubs] = useState(true);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [requestPreview, setRequestPreview] = useState<ApiUserBlogRequest | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   // ── Blog editor state ─────────────────────────────────────────────────────
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -304,7 +311,36 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  useEffect(() => { fetchBlogs(); fetchSubs(); fetchLogs(); }, [fetchBlogs, fetchSubs, fetchLogs]);
+  const fetchRequests = useCallback(async () => {
+    setLoadingRequests(true);
+    try { setRequests(await apiAdminGetRequests()); }
+    catch { toast({ title: 'Failed to load requests', variant: 'destructive' }); }
+    finally { setLoadingRequests(false); }
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    setApprovingId(id);
+    try {
+      await apiAdminApproveBlog(id, true);
+      toast({ title: 'Blog published! ✅', description: 'Subscriber has been notified.' });
+      fetchRequests();
+    } catch (e) {
+      toast({ title: 'Failed to approve', description: String(e), variant: 'destructive' });
+    } finally { setApprovingId(null); }
+  };
+
+  const handleReject = async (id: string) => {
+    setRejectingId(id);
+    try {
+      await apiAdminRejectBlog(id);
+      toast({ title: 'Blog rejected', description: 'Subscriber has been notified.' });
+      fetchRequests();
+    } catch (e) {
+      toast({ title: 'Failed to reject', description: String(e), variant: 'destructive' });
+    } finally { setRejectingId(null); }
+  };
+
+  useEffect(() => { fetchBlogs(); fetchSubs(); fetchLogs(); fetchRequests(); }, [fetchBlogs, fetchSubs, fetchLogs, fetchRequests]);
 
   // ── Blog handlers ───────────────────────────────────────────────────────────
   const handleSaveBlog = async () => {
@@ -479,6 +515,7 @@ export default function AdminDashboard() {
               {activeTab === 'blogs' && <><FileText className="h-4 w-4 text-primary" /> Blogs {blogs.length > 0 && <span className="text-xs bg-primary/20 text-primary rounded-full px-1.5">{blogs.length}</span>}</>}
               {activeTab === 'subscribers' && <><Users className="h-4 w-4 text-primary" /> Subscribers {subscribers.length > 0 && <span className="text-xs bg-primary/20 text-primary rounded-full px-1.5">{subscribers.length}</span>}</>}
               {activeTab === 'messages' && <><MessageSquare className="h-4 w-4 text-primary" /> Messages</>}
+              {activeTab === 'requests' && <><Inbox className="h-4 w-4 text-primary" /> Requests {requests.filter(r => r.status === 'PENDING').length > 0 && <span className="text-xs bg-orange-500/20 text-orange-400 rounded-full px-1.5">{requests.filter(r => r.status === 'PENDING').length}</span>}</>}
             </span>
             <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -487,6 +524,7 @@ export default function AdminDashboard() {
               {[{value:'blogs', icon:<FileText className="h-4 w-4" />, label:'Blogs', badge: blogs.length > 0 ? blogs.length : null},
                 {value:'subscribers', icon:<Users className="h-4 w-4" />, label:'Subscribers', badge: subscribers.length > 0 ? subscribers.length : null},
                 {value:'messages', icon:<MessageSquare className="h-4 w-4" />, label:'Messages', badge: null},
+                {value:'requests', icon:<Inbox className="h-4 w-4" />, label:'Requests', badge: requests.filter(r=>r.status==='PENDING').length > 0 ? requests.filter(r=>r.status==='PENDING').length : null},
               ].map(item => (
                 <button
                   key={item.value}
@@ -516,6 +554,14 @@ export default function AdminDashboard() {
           </TabsTrigger>
           <TabsTrigger value="messages" className="gap-1 flex-1">
             <MessageSquare className="h-4 w-4" /> Messages
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="gap-1 flex-1">
+            <Inbox className="h-4 w-4" /> Requests
+            {requests.filter(r => r.status === 'PENDING').length > 0 && (
+              <span className="ml-1 text-xs bg-orange-500/20 text-orange-400 rounded-full px-1.5">
+                {requests.filter(r => r.status === 'PENDING').length}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -634,6 +680,123 @@ export default function AdminDashboard() {
                       })}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── REQUESTS TAB ── */}
+        <TabsContent value="requests">
+          <Card className="bg-card border-border/50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Inbox className="h-5 w-5 text-primary" />
+                Blog Submission Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingRequests ? (
+                <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+              ) : requests.length === 0 ? (
+                <div className="text-center py-12">
+                  <Inbox className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">No blog requests yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {requests.map(req => {
+                    let blocks: any[] = [];
+                    try { blocks = JSON.parse(req.content); } catch { blocks = [{ id: '1', type: 'text', content: req.content }]; }
+                    const wordCount = blocks.filter(b => b.type === 'text').map((b: any) => b.content).join(' ').split(/\s+/).filter(Boolean).length;
+
+                    return (
+                      <div key={req.id} className="border border-border/50 rounded-xl p-4 space-y-3">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {req.authorPhoto ? (
+                              <img src={req.authorPhoto} alt="" className="w-9 h-9 rounded-full object-cover border border-border/50 shrink-0" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs border border-primary/30 shrink-0">
+                                <User className="h-4 w-4" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm truncate">{req.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                by {req.authorName} · {req.authorEmail} · {new Date(req.submittedAt).toLocaleDateString()} · ~{wordCount} words
+                              </p>
+                            </div>
+                          </div>
+                          {/* Status badge */}
+                          {req.status === 'PENDING' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 shrink-0">
+                              Pending Review
+                            </span>
+                          ) : req.status === 'APPROVED' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/30 shrink-0">
+                              <CheckCircle2 className="h-3 w-3" /> Published
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/30 shrink-0">
+                              <XCircle className="h-3 w-3" /> Rejected
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Preview of content */}
+                        <div className="bg-secondary/40 rounded-lg p-3 text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                          {blocks.filter((b: any) => b.type === 'text').map((b: any) => b.content).join(' ').slice(0, 300)}
+                          {wordCount > 50 ? '…' : ''}
+                        </div>
+
+                        {/* Action buttons */}
+                        {req.status === 'PENDING' && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Button
+                              size="sm"
+                              className="bg-primary hover:bg-primary/90 gap-1.5"
+                              disabled={approvingId === req.id}
+                              onClick={() => handleApprove(req.id)}
+                            >
+                              {approvingId === req.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                              Approve & Publish
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-destructive/40 text-destructive hover:bg-destructive/10 gap-1.5"
+                              disabled={rejectingId === req.id}
+                              onClick={() => handleReject(req.id)}
+                            >
+                              {rejectingId === req.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                              Reject
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="gap-1.5 text-muted-foreground"
+                              onClick={() => {
+                                setMsgSubject(req.title);
+                                setMsgRecipients([req.authorEmail!]);
+                                setSendToMode('specific');
+                                setActiveTab('messages');
+                              }}
+                            >
+                              <Mail className="h-3.5 w-3.5" /> Message Author
+                            </Button>
+                          </div>
+                        )}
+                        {req.publishedBlogId && (
+                          <Link to={`/blog/${req.publishedBlogId}`}
+                            className="text-xs text-primary hover:underline flex items-center gap-1">
+                            <Eye className="h-3 w-3" /> View published blog
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

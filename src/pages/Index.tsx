@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { apiGetBlogs, ApiBlog } from '@/lib/api';
 import { BlogCard } from '@/components/BlogCard';
 import { NewsletterSection } from '@/components/NewsletterSection';
+import { Button } from '@/components/ui/button';
+import { useUserAuth } from '@/lib/UserAuthContext';
 
 const Index = () => {
   const [blogs, setBlogs] = useState<ApiBlog[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isLoggedIn } = useUserAuth();
 
   useEffect(() => {
     apiGetBlogs()
@@ -33,10 +37,33 @@ const Index = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto px-2"
+          className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto px-2 mb-8"
         >
           Tech insights, tutorials, and stories — delivered fresh.
         </motion.p>
+
+        {/* Write a Blog CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <Button
+            asChild
+            size="lg"
+            className="bg-primary hover:bg-primary/90 gap-2 shadow-lg shadow-primary/25 px-8"
+          >
+            <Link to={isLoggedIn ? '/write-blog' : '/login'}>
+              <Pencil className="h-4 w-4" />
+              Write a Blog
+            </Link>
+          </Button>
+          {!isLoggedIn && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Sign in with your subscriber account to share your story
+            </p>
+          )}
+        </motion.div>
       </section>
 
       {/* Blog Grid */}
@@ -48,7 +75,7 @@ const Index = () => {
         ) : blogs.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
             <p className="text-lg">No blog posts yet.</p>
-            <p className="text-sm mt-1">Head to the admin dashboard to create your first post!</p>
+            <p className="text-sm mt-1">Be the first to contribute — write a blog above!</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

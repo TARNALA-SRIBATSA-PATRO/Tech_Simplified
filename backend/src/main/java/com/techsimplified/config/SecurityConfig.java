@@ -31,8 +31,6 @@ public class SecurityConfig {
 
     /**
      * Completely remove public endpoints from the Spring Security filter chain.
-     * These paths are NEVER touched by Spring Security — no CORS filter, no auth filter, nothing.
-     * This is the definitive fix for the MvcRequestMatcher/HandlerMappingIntrospector 403 issue.
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
@@ -40,7 +38,10 @@ public class SecurityConfig {
             .requestMatchers(new AntPathRequestMatcher("/api/admin/otp"))
             .requestMatchers(new AntPathRequestMatcher("/api/admin/login"))
             .requestMatchers(new AntPathRequestMatcher("/api/subscribers/subscribe"))
-            .requestMatchers(new AntPathRequestMatcher("/api/subscribers/verify"));
+            .requestMatchers(new AntPathRequestMatcher("/api/subscribers/verify"))
+            // User OTP login endpoints — public
+            .requestMatchers(new AntPathRequestMatcher("/api/user/otp"))
+            .requestMatchers(new AntPathRequestMatcher("/api/user/login"));
     }
 
     @Bean
@@ -50,8 +51,10 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public: read blogs
+                // Public: read blogs, view blog stats, read comments
                 .requestMatchers(HttpMethod.GET, "/api/blogs", "/api/blogs/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/blogs/*/view").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/blogs/*/comments").permitAll()
                 // Everything else requires JWT
                 .anyRequest().authenticated()
             )
@@ -64,7 +67,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
@@ -73,10 +76,6 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Spring MVC-level CORS — applies even to paths excluded via web.ignoring().
-     * This fixes the CORS error on the frontend for the public OTP endpoints.
-     */
     @Bean
     public WebMvcConfigurer mvcCorsConfigurer() {
         return new WebMvcConfigurer() {
@@ -84,7 +83,7 @@ public class SecurityConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
                         .allowedOriginPatterns("*")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
