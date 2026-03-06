@@ -12,7 +12,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -34,14 +33,8 @@ public class SecurityConfig {
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring()
-            .requestMatchers(new AntPathRequestMatcher("/api/admin/otp"))
-            .requestMatchers(new AntPathRequestMatcher("/api/admin/login"))
-            .requestMatchers(new AntPathRequestMatcher("/api/subscribers/subscribe"))
-            .requestMatchers(new AntPathRequestMatcher("/api/subscribers/verify"))
-            // User OTP login endpoints — public
-            .requestMatchers(new AntPathRequestMatcher("/api/user/otp"))
-            .requestMatchers(new AntPathRequestMatcher("/api/user/login"));
+        // Keep empty — all public endpoints are permitted via filterChain permitAll() below
+        return web -> {};
     }
 
     @Bean
@@ -51,6 +44,13 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Public auth endpoints — admin and subscriber login/OTP
+                .requestMatchers(HttpMethod.POST, "/api/admin/otp").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/admin/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/subscribers/subscribe").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/subscribers/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/user/otp").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/user/login").permitAll()
                 // Public: read blogs, view blog stats, read comments
                 .requestMatchers(HttpMethod.GET, "/api/blogs", "/api/blogs/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/blogs/*/view").permitAll()
