@@ -65,7 +65,7 @@ public class NotificationController {
                             return ResponseEntity.<Void>noContent().build();
                         })
                         .orElse(ResponseEntity.<Void>notFound().build()))
-                .orElse(ResponseEntity.status(401).build());
+                .orElse(ResponseEntity.<Void>status(401).build());
     }
 
     /** PATCH /api/user/notifications/read-all — mark all as read */
@@ -76,7 +76,7 @@ public class NotificationController {
                     notificationRepository.markAllReadBySubscriberId(sub.getId());
                     return ResponseEntity.<Void>noContent().build();
                 })
-                .orElse(ResponseEntity.status(401).build());
+                .orElse(ResponseEntity.<Void>status(401).build());
     }
 
     /** DELETE /api/user/notifications/{id} — delete single notification */
@@ -92,7 +92,7 @@ public class NotificationController {
                             return ResponseEntity.<Void>noContent().build();
                         })
                         .orElse(ResponseEntity.<Void>notFound().build()))
-                .orElse(ResponseEntity.status(401).build());
+                .orElse(ResponseEntity.<Void>status(401).build());
     }
 
     /** DELETE /api/user/notifications — delete all notifications for user */
@@ -103,6 +103,6 @@ public class NotificationController {
                     notificationRepository.deleteBySubscriberId(sub.getId());
                     return ResponseEntity.<Void>noContent().build();
                 })
-                .orElse(ResponseEntity.status(401).build());
+                .orElse(ResponseEntity.<Void>status(401).build());
     }
 }

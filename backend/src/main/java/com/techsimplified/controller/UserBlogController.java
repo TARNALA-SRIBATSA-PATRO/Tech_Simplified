@@ -63,7 +63,7 @@ public class UserBlogController {
                 .map(sub -> requestService.delete(id, sub.getId())
                         ? ResponseEntity.<Void>noContent().build()
                         : ResponseEntity.<Void>status(403).build())
-                .orElse(ResponseEntity.status(401).build());
+                .orElse(ResponseEntity.<Void>status(401).build());
     }
 
     // ── Admin-facing ──────────────────────────────────────────────────────────

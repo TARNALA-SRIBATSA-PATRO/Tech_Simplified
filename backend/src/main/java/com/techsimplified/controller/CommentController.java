@@ -76,7 +76,7 @@ public class CommentController {
                 .map(sub -> commentService.deleteComment(commentId, sub.getId())
                         ? ResponseEntity.<Void>noContent().build()
                         : ResponseEntity.<Void>status(403).build())
-                .orElse(ResponseEntity.status(401).build());
+                .orElse(ResponseEntity.<Void>status(401).build());
     }
 
     /** POST /api/blogs/{blogId}/comments/{commentId}/like — toggle comment like */
