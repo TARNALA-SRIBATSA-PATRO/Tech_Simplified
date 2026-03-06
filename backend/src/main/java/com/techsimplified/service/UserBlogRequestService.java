@@ -87,12 +87,14 @@ public class UserBlogRequestService {
         requestRepository.save(req);
 
         // Send notification to subscriber
+        String blogTitle = req.getTitle();
+        UUID savedBlogId = savedBlog.getId();
         subscriberRepository.findById(req.getSubscriberId()).ifPresent(sub -> {
             Notification notif = Notification.builder()
                     .subscriberId(sub.getId())
                     .type(Notification.Type.BLOG_PUBLISHED)
-                    .message("Your blog "" + req.getTitle() + "" has been approved and published! 🎉")
-                    .relatedBlogId(savedBlog.getId())
+                    .message("Your blog '" + blogTitle + "' has been approved and published!")
+                    .relatedBlogId(savedBlogId)
                     .build();
             notificationRepository.save(notif);
         });
@@ -110,11 +112,12 @@ public class UserBlogRequestService {
         requestRepository.save(req);
 
         // Send rejection notification
+        String blogTitle = req.getTitle();
         subscriberRepository.findById(req.getSubscriberId()).ifPresent(sub -> {
             Notification notif = Notification.builder()
                     .subscriberId(sub.getId())
                     .type(Notification.Type.BLOG_REJECTED)
-                    .message("Your blog "" + req.getTitle() + "" was not approved at this time. You may update and resubmit.")
+                    .message("Your blog '" + blogTitle + "' was not approved at this time. You may update and resubmit.")
                     .build();
             notificationRepository.save(notif);
         });

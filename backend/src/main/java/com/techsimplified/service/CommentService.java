@@ -87,7 +87,7 @@ public class CommentService {
                 Notification notif = Notification.builder()
                         .subscriberId(authorId)
                         .type(Notification.Type.COMMENT_ON_BLOG)
-                        .message(commenterName + " commented on your blog: "" + blog.getTitle() + """)
+                        .message(commenterName + " commented on your blog: '" + blog.getTitle() + "'")
                         .relatedBlogId(blogId)
                         .relatedCommentId(saved.getId())
                         .build();
@@ -157,12 +157,9 @@ public class CommentService {
             nowLiked = true;
         }
         // Update like count on comment
+        final boolean finalNowLiked = nowLiked;
         commentRepository.findById(commentId).ifPresent(c -> {
-            long count = commentLikeRepository.findByCommentIdAndSubscriberId(commentId, subscriberId).isPresent()
-                    ? c.getLikeCount() + (nowLiked ? 0 : -1)
-                    : c.getLikeCount() + (nowLiked ? 1 : 0);
-            // Simpler: recount via query-like approach
-            c.setLikeCount(nowLiked ? c.getLikeCount() + 1 : Math.max(0, c.getLikeCount() - 1));
+            c.setLikeCount(finalNowLiked ? c.getLikeCount() + 1 : Math.max(0, c.getLikeCount() - 1));
             commentRepository.save(c);
         });
         BlogComment updated = commentRepository.findById(commentId).orElse(null);
