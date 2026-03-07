@@ -28,15 +28,18 @@ public class EmailService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     /** Send a plain-text email asynchronously. */
-    public void sendAsync(String to, String subject, String text) {
+    public CompletableFuture<Boolean> sendAsync(String to, String subject, String text) {
         String html = "<p style='color:#e0e0e0;font-size:15px;line-height:1.7;font-family:Arial,Helvetica,sans-serif;margin:0;'>" + text + "</p>";
-        sendHtmlAsync(to, subject, html, text);
+        return sendHtmlAsync(to, subject, html, text);
     }
 
-    /** Send a branded HTML email asynchronously. */
-    public void sendHtmlAsync(String to, String subject, String htmlBody, String textFallback) {
-        CompletableFuture.runAsync(() -> {
+    /** Send a branded HTML email asynchronously. Returns true on success, false on failure. */
+    public CompletableFuture<Boolean> sendHtmlAsync(String to, String subject, String htmlBody, String textFallback) {
+        return CompletableFuture.supplyAsync(() -> {
             try {
+                System.out.println("[Email] Attempting to send to: " + to + " via Brevo sender: " + senderEmail);
+                System.out.println("[Email] API key prefix: " + (apiKey != null && apiKey.length() > 8 ? apiKey.substring(0, 8) + "..." : "<short/null>"));
+
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 headers.set("api-key", apiKey);
@@ -51,9 +54,11 @@ public class EmailService {
 
                 HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
                 restTemplate.postForObject(BREVO_API_URL, request, String.class);
-                System.out.println("[Email] Sent to: " + to);
+                System.out.println("[Email] Successfully sent to: " + to);
+                return true;
             } catch (Exception e) {
-                System.err.println("[Email] Failed to " + to + ": " + e.getMessage());
+                System.err.println("[Email] FAILED to send to " + to + ": " + e.getMessage());
+                return false;
             }
         });
     }

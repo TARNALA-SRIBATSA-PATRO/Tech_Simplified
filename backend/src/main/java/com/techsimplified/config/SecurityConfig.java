@@ -48,11 +48,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/admin/otp").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/admin/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/subscribers/subscribe").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/subscribers/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/subscribers/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/user/otp").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/user/login").permitAll()
                 // Public: read blogs, view blog stats, read comments
                 .requestMatchers(HttpMethod.GET, "/api/blogs", "/api/blogs/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/blogs/*/stats").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/blogs/*/view").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/blogs/*/comments").permitAll()
                 // Everything else requires JWT
