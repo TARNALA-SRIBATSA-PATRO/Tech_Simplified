@@ -18,9 +18,9 @@ services:
         sync: false
       - key: ADMIN_EMAIL
         sync: false
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_APP_PASSWORD
-        sync: false
+      - key: BREVO_API_KEY
+        sync: false          # Set in Render dashboard — Brevo HTTP email API key
+      - key: BREVO_SENDER_EMAIL
+        sync: false          # Set in Render dashboard — verified sender address in Brevo
       - key: FRONTEND_URL
         value: https://tech-simplified-sribatsa.vercel.app

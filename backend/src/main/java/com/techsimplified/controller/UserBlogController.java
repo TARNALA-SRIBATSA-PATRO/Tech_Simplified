@@ -45,12 +45,9 @@ public class UserBlogController {
             @RequestHeader("Authorization") String authHeader,
             @RequestBody BlogSubmitRequest req) {
         return userAuthService.getSubscriberFromHeader(authHeader)
-                .map(sub -> {
-                    var updated = requestService.update(id, sub.getId(), req.getTitle(), req.getContent());
-                    return updated != null
-                            ? ResponseEntity.ok(updated)
-                            : ResponseEntity.status(403).<Object>build();
-                })
+                .map(sub -> requestService.update(id, sub.getId(), req.getTitle(), req.getContent())
+                        .map(updated -> ResponseEntity.ok((Object) updated))
+                        .orElse(ResponseEntity.status(403).<Object>build()))
                 .orElse(ResponseEntity.status(401).build());
     }
 
